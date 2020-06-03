@@ -118,9 +118,8 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 {
     //y[0] == n
     //y[1] == omega
-
-	//yp[0] == [phi, n]
-	//yp[1] == [phi, omega]
+    //yp[0] == [phi, n]
+    //yp[1] == [phi, omega]
 
     /////////////////First, invert polarisation equation///////////
     //Note that we get the negative potential!!
@@ -185,8 +184,8 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     	dg::blas1::axpby( 1.,  y[0], -1., m_n_perturbation);
 
     	for (unsigned i=0; i<2;i++) {
-			m_arakawa( m_phi, y[i], yp[i]);
-       		dg::blas1::axpby (  m_alpha,   m_n_perturbation, 1., yp[i]);
+	    m_arakawa( m_phi, y[i], yp[i]);
+       	    dg::blas1::axpby (  m_alpha,   m_n_perturbation, 1., yp[i]);
      	    dg::blas1::axpby ( -m_alpha, m_phi_perturbation, 1., yp[i]);
     }}
 	else {
