@@ -2,11 +2,11 @@
 #include <iomanip>
 #include <vector>
 
-#include "file/nc_utilities.h"
+#include "dg/file/nc_utilities.h"
 
-#include "convection.h"
+#include "convection_HW.h"
 #include "dg/algorithm.h"
-#include "parameters.h"
+#include "parameters_HW.h"
 
 int main( int argc, char* argv[])
 {

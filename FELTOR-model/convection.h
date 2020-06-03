@@ -2,7 +2,7 @@
 #include <exception>
 
 #include "dg/algorithm.h"
-#include "parameters.h"
+#include "parameters_HW.h"
 
 namespace convection
 {
@@ -65,11 +65,13 @@ struct ExplicitPart
     }
 
   private:
+	const std::string  m_model;
     const double m_eps_pol;
-    const double m_kappa, m_nu;
+    const double m_kappa, m_nu, m_alpha;
+	double m_g;
     const container m_x, m_vol2d;
 
-    container m_phi, m_temp;
+    container m_phi, m_temp, m_phi_perturbation, m_n_perturbation;
     std::array<container,2> m_lapy;
 
     //matrices and solvers
@@ -80,6 +82,8 @@ struct ExplicitPart
     dg::MultigridCG2d<Geometry, Matrix, container> m_multigrid;
     std::vector<dg::Elliptic<Geometry, Matrix, container> > m_multi_pol;
     dg::Extrapolation<container> m_old_phi;
+	
+	dg::Average<container> m_average;
 
     std::array<double,4> m_invariant, m_invariant_diss;
 
@@ -87,16 +91,22 @@ struct ExplicitPart
 
 template< class Geometry, class M, class container>
 ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const Parameters& p ):
-    m_eps_pol(p.eps_pol), m_kappa(p.kappa), m_nu(p.nu),
+    m_model(p.model),
+	m_eps_pol(p.eps_pol), m_kappa(p.kappa), m_nu(p.nu), m_alpha(p.alpha), m_g(p.g),
     m_x( dg::evaluate( dg::cooX2d, grid)), m_vol2d( dg::create::volume(grid)),
-    m_phi( evaluate( dg::zero, grid)), m_temp(m_phi),
+    m_phi( evaluate( dg::zero, grid)), m_temp(m_phi), m_phi_perturbation(m_phi),
+	m_n_perturbation(m_phi),
     m_lapy({ m_phi, m_phi}),
     m_dy( dg::create::dy(grid)),
     m_arakawa( grid),
     m_laplaceM( grid, dg::normed, dg::centered),
     m_multigrid( grid, p.stages),
-    m_old_phi( 2, m_phi)
+    m_old_phi( 2, m_phi),
+	m_average(grid, dg::coo2d::y)
 {
+	if (m_model != "HW")
+		m_g = -p.kappa;
+     
     //construct multigrid
     m_multi_pol.resize(p.stages);
     for( unsigned u=0; u<p.stages; u++)
@@ -109,35 +119,85 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     //y[0] == n
     //y[1] == omega
 
+	//yp[0] == [phi, n]
+	//yp[1] == [phi, omega]
+
     /////////////////First, invert polarisation equation///////////
     //Note that we get the negative potential!!
+	/// m_old_phi is an extrapolation class
     m_old_phi.extrapolate( m_phi);
+
+	/// m_multigrid is a Conjugate Gradient in 2D for the multigrid
+	/// m_multi_pol seems to be the Laplacian for the multigrid
+	/// This is used to get the number of iterations needed to obtain
+	/// the desired accuracy, the operation used for this is   operation (phi) = omega * weights
+	/// where weights must be in the grid
     std::vector<unsigned> number = m_multigrid.direct_solve( m_multi_pol, m_phi, y[1], m_eps_pol);
+
+	/// insert phi for the next extrapolationi
     m_old_phi.update( m_phi);
     if(  number[0] == m_multigrid.max_iter())
+		//// This gives an accuracy not reached fail
         throw dg::Fail( m_eps_pol);
-    /////////////////////////update energetics/////////////////////
+    
+	/////////////////////////update energetics/////////////////////
     for( unsigned i=0; i<2; i++)
-        dg::blas2::symv( m_laplaceM, y[i], m_lapy[i]);
+		/// Calculate the Laplacian of y and place it in m_lapy
+        ///              M         * x   = y
+		dg::blas2::symv( m_laplaceM, y[i], m_lapy[i]);
+
+				////  M = M * a
     dg::blas1::scal( m_lapy, -1.);
-    //mass inveriant
+    
+	//mass inveriant
+	
+	/// Total mass: Integrate n in the V    Vol       n
     m_invariant[0]      =  dg::blas1::dot( m_vol2d, y[0] );
+	/// Diffusion of the total mass
     m_invariant_diss[0] = m_nu*dg::blas1::dot( m_vol2d, m_lapy[0]);
-    //energy terms
+    
+	//energy terms
+	/// Total entropy
     m_invariant[1] = 0.5*dg::blas2::dot( y[0], m_vol2d, y[0]);
+	
+	//// Calculate Temperature, I believe
     m_arakawa.variation( m_phi, m_temp);
+	/// Total Kinetic energy, associated with the thermal energy
+	/// the contribution is 1/2 for each degreed of freedom 1 ?? (3 ??), in this case
     m_invariant[2] = 0.5*dg::blas1::dot( m_vol2d, m_temp);
+
+	/// Total potential energy, -Kappa * X coor  *  Volum  * n
     m_invariant[3] = -m_kappa*dg::blas2::dot( m_x, m_vol2d, y[0]);
-    //energy dissipation terms
+
+    //energy dissipation terms, the same over the Laplacian of y
     m_invariant_diss[0] =  m_nu*dg::blas1::dot( m_vol2d, m_lapy[0]);
     m_invariant_diss[1] =  m_nu*dg::blas2::dot( y[0],   m_vol2d, m_lapy[0]);
     m_invariant_diss[2] = -m_nu*dg::blas2::dot( m_phi, m_vol2d, m_lapy[1]);
     m_invariant_diss[3] = -m_nu*dg::blas2::dot( m_x,   m_vol2d, m_lapy[0]);
     ///////////////////////Equations////////////////////////////////
-    for( unsigned i=0; i<2; i++)
-        m_arakawa( m_phi,y[i], yp[i]); //m_phi is negative!
+	if (m_model == "HW") {
+		///Average///
+    	m_average( m_phi, m_phi_perturbation);
+    	m_average(  y[0], m_n_perturbation);
+	
+		///Perturbation terms///
+    	dg::blas1::axpby( 1., m_phi, -1., m_phi_perturbation);
+    	dg::blas1::axpby( 1.,  y[0], -1., m_n_perturbation);
 
-    dg::blas2::gemv( -m_kappa, m_dy, m_phi, 1., yp[0]);
+    	for (unsigned i=0; i<2;i++) {
+			m_arakawa( m_phi, y[i], yp[i]);
+       		dg::blas1::axpby (  m_alpha,   m_n_perturbation, 1., yp[i]);
+     	    dg::blas1::axpby ( -m_alpha, m_phi_perturbation, 1., yp[i]);
+    }}
+	else {
+    	for( unsigned i=0; i<2; i++)
+			///// [m_phi, y] = yp
+    	    m_arakawa( m_phi,y[i], yp[i]); //m_phi is negative!
+	}
+	/// Kappa * d / dy, the term of the y derivative,
+	/// phi is negative, that's why both have same sign
+	///              -m_kappa * M   *   x + a * y
+    dg::blas2::gemv(      m_g, m_dy, m_phi, 1., yp[0]);
     dg::blas2::gemv( -m_kappa, m_dy,  y[0], 1., yp[1]);
     return;
 }

@@ -10,6 +10,7 @@ namespace convection{
  */
 struct Parameters
 {
+	std::string model;
     unsigned n, Nx, Ny;
     double dt;
     unsigned n_out, Nx_out, Ny_out;
@@ -18,7 +19,7 @@ struct Parameters
     unsigned stages;
 
     double eps_pol, eps_time;
-    double kappa, nu;
+    double kappa, nu, g, alpha;
 
     double amp, sigma, posX, posY;
 
@@ -27,7 +28,9 @@ struct Parameters
 
 
     Parameters( const Json::Value& js) {
-        n       = js["n"].asUInt();
+        model   = js["model"].asString();
+
+		n       = js["n"].asUInt();
         Nx      = js["Nx"].asUInt();
         Ny      = js["Ny"].asUInt();
         dt      = js["dt"].asDouble();
@@ -41,7 +44,9 @@ struct Parameters
         eps_time    = js["eps_time"].asDouble();
         stages      = js.get("stages",3).asUInt();
         kappa       = js["curvature"].asDouble();
-        nu          = js["nu_perp"].asDouble();
+        g           = js["dens_prof"].asDouble();
+		alpha       = js["adiabatic"].asDouble();
+		nu          = js["nu_perp"].asDouble();
         amp         = js["amplitude"].asDouble();
         sigma       = js["sigma"].asDouble();
         posX        = js["posX"].asDouble();
@@ -53,10 +58,12 @@ struct Parameters
     }
 
     void display( std::ostream& os = std::cout ) const
-    {
+    {   os << "The model we are using is" <<model<<"\n";
         os << "Physical parameters are: \n"
             <<"    Viscosity:       = "<<nu<<"\n"
-            <<"    Curvature:       = "<<kappa<<"\n";
+            <<"    Curvature:       = "<<kappa<<"\n"
+			<<"  density profile:   = "<<g<<"\n"
+			<<" adiabatic parameter = "<<alpha<<"\n";
         os  <<"Blob parameters are: \n"
             << "    width:        "<<sigma<<"\n"
             << "    amplitude:    "<<amp<<"\n"
