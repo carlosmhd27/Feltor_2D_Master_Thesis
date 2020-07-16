@@ -11,6 +11,7 @@ namespace convection{
 struct Parameters
 {
 	std::string model;
+	bool modified;
     unsigned n, Nx, Ny;
     double dt;
     unsigned n_out, Nx_out, Ny_out;
@@ -28,8 +29,9 @@ struct Parameters
 
 
     Parameters( const Json::Value& js) {
-        model   = js["model"].asString();
-
+        model    = js["model"].asString();
+		modified = js["modified"].asBool();
+				
 		n       = js["n"].asUInt();
         Nx      = js["Nx"].asUInt();
         Ny      = js["Ny"].asUInt();
@@ -46,7 +48,7 @@ struct Parameters
         kappa       = js["curvature"].asDouble();
         g           = js["dens_prof"].asDouble();
 		alpha       = js["adiabatic"].asDouble();
-		nu          = js["nu_perp"].asDouble();
+		nu          = js["nu_perp"].asDouble();     // Dissipation
         amp         = js["amplitude"].asDouble();
         sigma       = js["sigma"].asDouble();
         posX        = js["posX"].asDouble();
@@ -58,7 +60,8 @@ struct Parameters
     }
 
     void display( std::ostream& os = std::cout ) const
-    {   os << "The model we are using is" <<model<<"\n";
+    {   os << "The model we are using is " <<model<<"\n"
+		   << "Use the modified HW model: " << modified<<"\n";
         os << "Physical parameters are: \n"
             <<"    Viscosity:       = "<<nu<<"\n"
             <<"    Curvature:       = "<<kappa<<"\n"
