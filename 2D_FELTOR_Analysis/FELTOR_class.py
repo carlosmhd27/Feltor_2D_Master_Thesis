@@ -6,7 +6,7 @@ from IPython.display import clear_output
 
 data_example = {
                 "model" : "HW",
-                "make_average": 1,
+                "modified": 1,
                 "n" :  3,
                 "Nx" : 120,
                 "Ny" : 120,
@@ -62,9 +62,6 @@ class FELTOR_Cpp ():
         inp     = self.input_file
         out     = self.output_file
 #         call([program, inp, out])
-        return program + ' ' + ' ' + inp + ' ' + out
-    
-#     def Clear(wait = True):
-#         clear_output(wait)
+        return program + ' ' + inp + ' ' + out
     
     
