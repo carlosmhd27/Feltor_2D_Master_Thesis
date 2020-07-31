@@ -11,7 +11,7 @@ namespace convection{
 struct Parameters
 {
 	std::string model;
-	bool modified;
+	bool modified, save_CP;
     unsigned n, Nx, Ny;
     double dt;
     unsigned n_out, Nx_out, Ny_out;
@@ -31,6 +31,7 @@ struct Parameters
     Parameters( const Json::Value& js) {
         model    = js["model"].asString();
 		modified = js["modified"].asBool();
+		save_CP  = js["save_CP"].asBool();
 				
 		n       = js["n"].asUInt();
         Nx      = js["Nx"].asUInt();
@@ -61,7 +62,8 @@ struct Parameters
 
     void display( std::ostream& os = std::cout ) const
     {   os << "The model we are using is " <<model<<"\n"
-		   << "Use the modified HW model: " << modified<<"\n";
+		   << "Use the modified HW model: " << modified<<"\n"
+           << "Save only the central point of the field: " << save_CP << "\n";
         os << "Physical parameters are: \n"
             <<"    Viscosity:       = "<<nu<<"\n"
             <<"    Curvature:       = "<<kappa<<"\n"
