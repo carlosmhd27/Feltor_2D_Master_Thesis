@@ -55,9 +55,9 @@ int main( int argc, char* argv[])
     std::string input = js.toStyledString();
     err = nc_put_att_text( ncid, NC_GLOBAL, "inputfile", input.size(), input.data());
     int dim_ids[3], tvarID;
-    if (p.save_CP == 0){
-        err = file::define_dimensions( ncid, dim_ids, &tvarID, grid_out);
-    }
+    
+    err = file::define_dimensions( ncid, dim_ids, &tvarID, grid_out);
+    
     //Time ids
     int EtimeID, EtimevarID;
     err = file::define_time( ncid, "energy_time", &EtimeID, &EtimevarID);
@@ -84,17 +84,13 @@ int main( int argc, char* argv[])
         err = nc_put_vara_double( ncid, dissID[i], Estart, Ecount, &exp.invariants_diffusion()[i]);
     }
 
-    // dg::RealGrid2d<double>::RealGrid2d grid_solution;
-    // if(p.save_CP){ grid_solution ( 0, p.lx, 0, p.ly, p.n, p.Nx, p.Ny, p.bc_x, p.bc_y); }
-    // else         { grid_solution ( 0, p.lx, 0, p.ly, p.n_out, p.Nx_out, p.Ny_out, p.bc_x, p.bc_y); }
-
-    dg::DVec transfer( dg::evaluate( dg::zero, grid));
-    std::vector<dg::DVec> transferD(4, dg::evaluate(dg::zero, grid)); // grid_out
-    dg::HVec transferH(dg::evaluate(dg::zero, grid)); // grid_out
-
+    dg::DVec transfer (dg::evaluate(dg::zero, grid));
+    std::vector<dg::DVec> transferD_1P(4, dg::evaluate( dg::zero, grid));
+    dg::HVec transferH_1P( dg::evaluate( dg::zero, grid));
     size_t count_CP[] = {1};
     size_t start_CP[] = {0}; // grid_out.n()*grid_out.Nx()
     const unsigned middle = p.Ny * p.Nx / 2 + p.Nx / 2;
+    int dataIDs_1P[4];
     std::string names_1P[4] = {"electrons_center", "ions_center", "potential_center", "vorticity_center"};
 
     size_t count[3] = {1, grid_out.n()*grid_out.Ny(), grid_out.n()*grid_out.Nx()};
@@ -102,78 +98,53 @@ int main( int argc, char* argv[])
     int dataIDs[4];
     std::string names[4] = {"electrons", "ions", "potential", "vorticity"};
     dg::IDMatrix interpolate = dg::create::interpolation( grid_out, grid);
+    std::vector<dg::DVec> transferD(4, dg::evaluate(dg::zero, grid_out)); // grid_out
+    dg::HVec transferH(dg::evaluate(dg::zero, grid_out)); // grid_out
+
+    //field IDs
+
+    for( unsigned i=0; i<4; i++){
+        err = nc_def_var( ncid, names[i].data(), NC_DOUBLE, 3, dim_ids, &dataIDs[i]);}
+
+    dg::blas2::symv( interpolate, y0[0],           transferD[0]);
+    dg::blas2::symv( interpolate, y0[0],           transferD[1]);
+    dg::blas2::symv( interpolate, exp.potential(), transferD[2]);
+    dg::blas2::symv( interpolate, y0[1],           transferD[3]);
+
+    for( int k=0;k<4; k++)
+    {   
+        dg::blas1::transfer( transferD[k], transferH);
+        err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
+    }
+    err = nc_put_vara_double( ncid, tvarID, start, count, &time);
+    std::cout << "Exiting the fields" << std::endl;
+
 
     //Fields center point
+
     if (p.save_CP){
         //Fields center point
 
-        // std::vector<dg::DVec> transferD_defined(4, dg::evaluate(dg::zero, grid));
-        // dg::HVec transferH_defined(dg::evaluate(dg::zero, grid));
-
-        // transferD = transferD_defined; // grid_out
-        // transferH = transferH_defined; // grid_out
-
         for( unsigned i=0; i<4; i++){
-            err = nc_def_var( ncid, names_1P[i].data(),  NC_DOUBLE, 1,  &EtimeID, &dataIDs[i]);
+            err = nc_def_var( ncid, names_1P[i].data(),  NC_DOUBLE, 1,  &EtimeID, &dataIDs_1P[i]);
         }
 
-        //////////////first output ////////////
-                
-        dg::blas1::axpby (  1., y0[0],           0., transferD[0]);
-        dg::blas1::axpby (  1., y0[0],           0., transferD[1]);
-        dg::blas1::axpby (  1., exp.potential(), 0., transferD[2]);
-        dg::blas1::axpby (  1., y0[1],           0., transferD[3]);
-
-        for( int k=0;k<4; k++)
-        {
-            dg::blas1::transfer( transferD[k], transferH);
-            err = nc_put_vara_double( ncid, dataIDs[k], start_CP, count_CP, transferH.data() + middle);
-        }
-        
-        // std::cout << 0 <<std::endl;
-        // dg::blas1::transfer( transferD[0], transferH);
-        // err = nc_put_vara_double( ncid, dataIDs[0], start_CP, count_CP, transferH.data() + middle);
+        dg::blas1::transfer( y0[0], transferH_1P);
+        err = nc_put_vara_double( ncid, dataIDs[0], start_CP, count_CP, transferH.data() + middle);
         // std::cout << 1 <<std::endl;
-        // err = nc_put_vara_double( ncid, dataIDs[1], start_CP, count_CP, transferH.data() + middle);
+        err = nc_put_vara_double( ncid, dataIDs[1], start_CP, count_CP, transferH.data() + middle);
         
         // std::cout << 2 <<std::endl;
-        // dg::blas1::transfer( exp.potential(), transferH);
-        // err = nc_put_vara_double( ncid, dataIDs[2], start_CP, count_CP, transferH.data() + middle);
+        dg::blas1::transfer( exp.potential(), transferH_1P);
+        err = nc_put_vara_double( ncid, dataIDs[2], start_CP, count_CP, transferH.data() + middle);
 
         // std::cout << 3  <<std::endl;
-        // dg::blas1::transfer( y0[1], transferH);
-        // err = nc_put_vara_double( ncid, dataIDs[3], start_CP, count_CP, transferH.data() + middle);
+        dg::blas1::transfer( y0[1], transferH_1P);
+        err = nc_put_vara_double( ncid, dataIDs[3], start_CP, count_CP, transferH.data() + middle);
 
+        err = nc_close(ncid);
     }
-    
-    //field IDs
-    else
-    {
-        for( unsigned i=0; i<4; i++){
-        err = nc_def_var( ncid, names[i].data(), NC_DOUBLE, 3, dim_ids, &dataIDs[i]);}
-        
-        ///////////// First output //////////////////////////////////
-        // count = {1, grid_out.n()*grid_out.Ny(), grid_out.n()*grid_out.Nx()};
-        // start = {0, 0, 0};
-        
-        std::vector<dg::DVec> transferD_defined(4, dg::evaluate(dg::zero, grid_out));
-        dg::HVec transferH_defined(dg::evaluate(dg::zero, grid_out));
 
-        transferD = transferD_defined; // grid_out
-        transferH = transferH_defined; // grid_out
-
-        dg::blas2::symv( interpolate, y0[0],           transferD[0]);
-        dg::blas2::symv( interpolate, y0[0],           transferD[1]);
-        dg::blas2::symv( interpolate, exp.potential(), transferD[2]);
-        dg::blas2::symv( interpolate, y0[1],           transferD[3]);
-        for( int k=0;k<4; k++)
-        {   
-            dg::blas1::transfer( transferD[k], transferH);
-            err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
-        }
-        err = nc_put_vara_double( ncid, tvarID, start, count, &time);
-    }
-    err = nc_close(ncid);
     ///////////////////////////////////////Timeloop/////////////////////////////////
     const double mass0 = exp.invariants()[0], mass_blob0 = mass0 - grid.lx()*grid.ly();
     double E0 = exp.invariants()[1] + exp.invariants()[2], E1 = 0, diff = 0;
@@ -195,6 +166,7 @@ int main( int argc, char* argv[])
 
         for( unsigned j=0; j<p.itstp; j++)
         {
+
             karniadakis.step( exp, imp, time, y0);
             //store accuracy details
             {
@@ -206,59 +178,51 @@ int main( int argc, char* argv[])
                 std::cout << "diff: "<< diff<<" diss: "<<diss<<"\t";
                 std::cout << "Accuracy: "<< 2.*(diff-diss)/(diff+diss)<<"\n";
             }
+
             Estart[0] += 1;
             // start[0] +=1;
             if (p.save_CP){start_CP[0] += 1;}
-            {   
+            {
+                std::cout << 0 <<std::endl;   
                 err = nc_open(argv[2], NC_WRITE, &ncid);
+
                 if (p.save_CP)
                 {
-                        dg::blas1::axpby (  1., y0[0],           0., transferD[0]);
-                        dg::blas1::axpby (  1., y0[0],           0., transferD[1]);
-                        dg::blas1::axpby (  1., exp.potential(), 0., transferD[2]);
-                        dg::blas1::axpby (  1., y0[1],           0., transferD[3]);
-                // dg::blas1::transfer( y0[0], transferH);
-                // err = nc_put_vara_double( ncid, dataIDs[0], start_CP, count_CP, transferH.data() + middle);
-                // err = nc_put_vara_double( ncid, dataIDs[1], start_CP, count_CP, transferH.data() + middle);
+                    dg::blas1::transfer( y0[0], transferH_1P);
+                    err = nc_put_vara_double( ncid, dataIDs[0], start_CP, count_CP, transferH.data() + middle);
+                    err = nc_put_vara_double( ncid, dataIDs[1], start_CP, count_CP, transferH.data() + middle);
+                    
+                    dg::blas1::transfer( exp.potential(), transferH_1P);
+                    err = nc_put_vara_double( ncid, dataIDs[2], start_CP, count_CP, transferH.data() + middle);
 
-                // dg::blas1::transfer( exp.potential(), transferH);
-                // err = nc_put_vara_double( ncid, dataIDs[2], start_CP, count_CP, transferH.data() + middle);
+                    dg::blas1::transfer( y0[1], transferH_1P);
+                    err = nc_put_vara_double( ncid, dataIDs[3], start_CP, count_CP, transferH.data() + middle);
+                    }
 
-                // dg::blas1::transfer( y0[1], transferH);
-                // err = nc_put_vara_double( ncid, dataIDs[3], start_CP, count_CP, transferH.data() + middle);
-
-                }
                 err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
                 for( int i=0; i<4; i++)
                 {
                     err = nc_put_vara_double( ncid, invariantID[i], Estart, Ecount, &exp.invariants()[i]);
-                    err = nc_put_vara_double( ncid, dissID[i], Estart, Ecount, &exp.invariants_diffusion()[i]);                    
-                    if (p.save_CP){
-                        dg::blas1::transfer( transferD[i], transferH);
-                        err = nc_put_vara_double( ncid, dataIDs[i], start_CP, count_CP, transferH.data() + middle);}
+                    err = nc_put_vara_double( ncid, dissID[i], Estart, Ecount, &exp.invariants_diffusion()[i]);                 
                 }
 
                 err = nc_close(ncid);
             }
         }
         //////////////////////////write fields////////////////////////
-        if (p.save_CP == 0)
+        start[0] = i;
+        dg::blas2::symv( interpolate, y0[0], transferD[0]);
+        dg::blas2::symv( interpolate, y0[0], transferD[1]);
+        dg::blas2::symv( interpolate, exp.potential(), transferD[2]);
+        dg::blas2::symv( interpolate, y0[1], transferD[3]);
+        err = nc_open(argv[2], NC_WRITE, &ncid);
+        for( int k=0;k<4; k++)
         {
-            start[0] = i;
-            dg::blas2::symv( interpolate, y0[0], transferD[0]);
-            dg::blas2::symv( interpolate, y0[0], transferD[1]);
-            dg::blas2::symv( interpolate, exp.potential(), transferD[2]);
-            dg::blas2::symv( interpolate, y0[1], transferD[3]);
-            err = nc_open(argv[2], NC_WRITE, &ncid);
-            for( int k=0;k<4; k++)
-            {
-                dg::blas1::transfer( transferD[k], transferH);
-                err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
-            }
-            err = nc_put_vara_double( ncid, tvarID, start, count, &time);
-            err = nc_close(ncid);
+            dg::blas1::transfer( transferD[k], transferH);
+            err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
         }
-
+        err = nc_put_vara_double( ncid, tvarID, start, count, &time);
+        err = nc_close(ncid);
 
 #ifdef DG_BENCHMARK
         ti.toc();
@@ -283,4 +247,3 @@ int main( int argc, char* argv[])
     return 0;
 
 }
-
