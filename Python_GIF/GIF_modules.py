@@ -18,8 +18,8 @@ ftsz_label = 12
 
 def Analyzed (File_name):
     '''
-    A function to get the parameters we want to plot, CM, error in Mass, Velocity of the
-    CM, Potential, density and vorticity-
+    Get the parameters we want to plot, CM, error in Mass, Velocity of the
+    CM, Potential, density and vorticity.
     '''
     
     Analitics = Analyse(File_name)
@@ -81,6 +81,7 @@ def init(Analytics, ax, fig, model):
     ax[1, 1].set_title('Ions density', fontsize = ftsz_title)
     ax[1, 2].set_title('Vorticity', fontsize = ftsz_title)
     
+    ### To put the colormap, it won't get updated, still need to fix
 #     im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.potential[0], cmap = 'plasma', shading = 'gouraud');
 #     fig.colorbar(im1,ax=ax[1, 0])
     
