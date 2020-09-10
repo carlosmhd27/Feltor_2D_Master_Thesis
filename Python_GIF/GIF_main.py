@@ -16,7 +16,7 @@ model = 'IC'
 fig, ax = plt.subplots(2, 3, figsize=(24, 12))
 
 ## We define the directory where the outputs are located and confirm it exists
-dir_name  = '../Python_runs_FELTOR/Large_temp/second_outputs/'
+dir_name  = 'path/to/outputs/'
 directory = './' + dir_name
 exists    = os.path.isdir("./" + dir_name)
 
