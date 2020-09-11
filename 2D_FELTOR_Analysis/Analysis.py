@@ -25,10 +25,10 @@ class Analyse ():
         self.input = json.loads(self.Data.inputfile)
         
         self.x    = array(self.Data['x'][:])
-        self.Nx   = self.input['Nx'] + self.input['Nx_out'] ## Nx_out are the points out of the grid
+        self.Nx   = sself.input['n_out'] * self.input['Nx_out'] ## Nx_out are the points out of the grid
 
         self.y    = array(self.Data['y'][:])
-        self.Ny   = self.input['Ny'] + self.input['Ny_out']
+        self.Ny   = sself.input['n_out'] * self.input['Ny_out']
         
         self.time    = array(self.Data['time'][:])
         self.tm_stps = len(self.time)
