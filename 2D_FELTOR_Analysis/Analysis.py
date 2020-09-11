@@ -34,6 +34,7 @@ class Analyse ():
         self.tm_stps = len(self.time)
         
         self.ions = array(self.Data['ions'][:])
+        self.potential = array(self.Data['potential'][:])
         self.CM(); self.V_CM()
 
     def CM(self):
