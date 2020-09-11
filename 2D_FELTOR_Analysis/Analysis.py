@@ -25,16 +25,20 @@ class Analyse ():
         self.input = json.loads(self.Data.inputfile)
         
         self.x    = array(self.Data['x'][:])
-        self.Nx   = sself.input['n_out'] * self.input['Nx_out'] ## Nx_out are the points out of the grid
+        self.Nx   = self.input['n_out'] * self.input['Nx_out'] ## Nx_out are the points out of the grid
 
         self.y    = array(self.Data['y'][:])
-        self.Ny   = sself.input['n_out'] * self.input['Ny_out']
+        self.Ny   = self.input['n_out'] * self.input['Ny_out']
         
         self.time    = array(self.Data['time'][:])
         self.tm_stps = len(self.time)
         
-        self.ions = array(self.Data['ions'][:])
+        self.ions      = array(self.Data['ions'][:])
         self.potential = array(self.Data['potential'][:])
+        
+        self.Mass      = self.integrate('ions')
+        self.Potential = self.integrate('potential')
+        self.Mass_err  = (self.Mass[0] - self.Mass) / self.Mass[0]
         self.CM(); self.V_CM()
 
     def CM(self):
