@@ -70,7 +70,6 @@ struct ExplicitPart
     const double m_eps_pol;
     const double m_kappa, m_nu, m_alpha;
     double m_g;
-    double m_add_average;
     const container m_x, m_vol2d;
 	
 
@@ -95,7 +94,6 @@ template< class Geometry, class M, class container>
 ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const Parameters& p ):
     m_model(p.model), m_modified(p.modified),
     m_eps_pol(p.eps_pol), m_kappa(p.kappa), m_nu(p.nu), m_alpha(p.alpha), m_g(p.g),
-    m_add_average(p.g),
     m_x( dg::evaluate( dg::cooX2d, grid)), m_vol2d( dg::create::volume(grid)),
     m_phi( evaluate( dg::zero, grid)), m_temp(m_phi), m_phi_perturbation(m_phi),
     m_n_perturbation(m_phi),
