@@ -107,7 +107,6 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     m_old_phi( 2, m_phi),
     m_average(grid, dg::coo2d::y)
 {
-    if (m_model != "HW")
 	m_g += -p.kappa;
     //construct multigrid
     m_multi_pol.resize(p.stages);
