@@ -187,18 +187,22 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     ///////////////////////Equations////////////////////////////////
 	if (m_model == "HW") {
 		///Average///
-		if(m_modified){
-    	    m_average( m_phi, m_phi_perturbation);
-	        m_average(  y[0], m_n_perturbation);
-		}
-		///Perturbation terms///
-    	dg::blas1::axpby( 1., m_phi, -1., m_phi_perturbation);
-    	dg::blas1::axpby( 1.,  y[0], -1., m_n_perturbation);
-
-    	for (unsigned i=0; i<2;i++) {
-			m_arakawa( m_phi, y[i], yp[i]);
-       		dg::blas1::axpby (  m_alpha,   m_n_perturbation, 1., yp[i]);
-     	    dg::blas1::axpby ( -m_alpha, m_phi_perturbation, 1., yp[i]);
+	    if(m_modified){
+            	m_average( m_phi, m_phi_perturbation);
+                m_average(  y[0], m_n_perturbation);
+                dg::blas1::axpby( 1., m_phi, -1., m_phi_perturbation);
+                dg::blas1::axpby( 1.,  y[0], -1., m_n_perturbation);
+        }
+        else
+        {
+            dg::blas1::copy( m_phi, m_phi_perturbation);
+            dg::blas1::copy( y[0], m_n_perturbation);
+        }
+        ///Perturbation terms///
+        for (unsigned i=0; i<2;i++) {
+            m_arakawa( m_phi, y[i], yp[i]);
+            dg::blas1::axpby ( -m_alpha,   m_n_perturbation, 1., yp[i]);
+            dg::blas1::axpby ( -m_alpha, m_phi_perturbation, 1., yp[i]);
     }}
 	else {
     	for( unsigned i=0; i<2; i++)
