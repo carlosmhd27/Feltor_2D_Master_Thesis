@@ -65,12 +65,12 @@ struct ExplicitPart
     }
 
   private:
-	const std::string  m_model;
+    const std::string  m_model;
     bool m_modified;
     const double m_eps_pol;
     const double m_kappa, m_nu, m_alpha;
-	double m_g;
-  	double m_add_average;
+    double m_g;
+    double m_add_average;
     const container m_x, m_vol2d;
 	
 
@@ -94,19 +94,21 @@ struct ExplicitPart
 template< class Geometry, class M, class container>
 ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const Parameters& p ):
     m_model(p.model), m_modified(p.modified),
-	m_eps_pol(p.eps_pol), m_kappa(p.kappa), m_nu(p.nu), m_alpha(p.alpha), m_g(p.g),
-  	m_add_average(p.g),
+    m_eps_pol(p.eps_pol), m_kappa(p.kappa), m_nu(p.nu), m_alpha(p.alpha), m_g(p.g),
+    m_add_average(p.g),
     m_x( dg::evaluate( dg::cooX2d, grid)), m_vol2d( dg::create::volume(grid)),
     m_phi( evaluate( dg::zero, grid)), m_temp(m_phi), m_phi_perturbation(m_phi),
-	m_n_perturbation(m_phi),
+    m_n_perturbation(m_phi),
     m_lapy({ m_phi, m_phi}),
     m_dy( dg::create::dy(grid)),
     m_arakawa( grid),
     m_laplaceM( grid, dg::normed, dg::centered),
     m_multigrid( grid, p.stages),
     m_old_phi( 2, m_phi),
-	m_average(grid, dg::coo2d::y)
+    m_average(grid, dg::coo2d::y)
 {
+    if (m_model != "HW")
+	m_g += -p.kappa;
     //construct multigrid
     m_multi_pol.resize(p.stages);
     for( unsigned u=0; u<p.stages; u++)
@@ -142,12 +144,12 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     
 	/////////////////////////update energetics/////////////////////
     for( unsigned i=0; i<2; i++)
-		/// Calculate the Laplacian of y and place it in m_lapy
+	/// Calculate the Laplacian of y and place it in m_lapy
         ///              M         * x   = y
-		dg::blas2::symv( m_laplaceM, y[i], m_lapy[i]);
+	dg::blas2::symv( m_laplaceM, y[i], m_lapy[i]);
 
-				////  M = M * a
-    dg::blas1::scal( m_lapy, -1.);
+		////  M = M * a
+     dg::blas1::scal( m_lapy, -1.);
     
 	//mass inveriant
 	
