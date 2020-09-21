@@ -107,16 +107,6 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     m_old_phi( 2, m_phi),
 	m_average(grid, dg::coo2d::y)
 {
-		std::cout << "Variables have their values" << std::endl;
-	if (m_model != "HW")
-		m_g = -p.kappa;
-	else if (m_modified) {
-        m_add_average = -1.;
-		std::cout << "True" << std::endl;}
-    else {
-       m_add_average = 0.;
-	   std::cout << "False" << std::endl;}
-
     //construct multigrid
     m_multi_pol.resize(p.stages);
     for( unsigned u=0; u<p.stages; u++)
