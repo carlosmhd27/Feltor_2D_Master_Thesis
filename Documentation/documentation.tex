@@ -110,7 +110,7 @@ the curvature, $\nu$ diffusivity.
   + \nu \nabla^2 n  \\
   \frac{\partial \omega}{\partial t} =
   \{ \omega, \phi\}
-  - \kappa\frac{\partial n}{\partial y} +\nu\nabla^2\omega
+  - \kappa\frac{\partial n}{\partial y} -\nu\nabla^4\omega
 \end{align}
 \end{subequations}
 
@@ -122,7 +122,7 @@ For the Hasegawa - Wakatani model we the following equations
  \frac{\partial n}{\partial t}     = - g \frac{\partial \phi}{\partial y} + \alpha (\tilde{\phi} - \tilde{n})
  + \{n, \phi\} + D \nabla^2 n \\
   \frac{\partial \omega}{\partial t} = \alpha ( \tilde{\phi} - \tilde{n}) + \{ \omega, \phi\}
-  + \mu\nabla^2\omega
+  - \mu\nabla^4\omega
 \end{align}
 \end{subequations}
 
@@ -143,7 +143,7 @@ where $<...>$ represents the averagive in the poloidal direction. For this reaso
  \frac{\partial n}{\partial t}     = - g \frac{\partial \phi}{\partial y} + \alpha [(\phi - <\phi>) - (n - <n>)]
  + \{n, \phi\} + D \nabla^2 n \\
   \frac{\partial \omega}{\partial t} = \alpha [(\phi - <\phi>) - (n - <n>)]  + \{ \omega, \phi\}
-  + \mu\nabla^2\omega
+  - \mu\nabla^4\omega
 \end{align}
 \end{subequations}
 

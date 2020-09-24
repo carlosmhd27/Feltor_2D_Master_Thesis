@@ -12,14 +12,18 @@ struct ImplicitPart
 {
     ImplicitPart( const Geometry& g, double nu):
         m_nu(nu),
-        m_LaplacianM_perp( g, dg::normed, dg::centered)
+        m_LaplacianM_perp( g, dg::normed, dg::centered),
+        m_temp( evaluate( dg::zero, g))
     { }
     void operator()(double t, const std::array<container,2>& y, std::array<container,2>& yp)
     {
         // y[0] := n
         // y[1] := omega
         for( unsigned i=0; i<2; i++)
-            dg::blas2::symv( m_LaplacianM_perp, y[i], yp[i]);
+        {
+            dg::blas2::symv( m_LaplacianM_perp, y[i], m_temp);
+            dg::blas2::symv( m_LaplacianM_perp, m_temp, yp[i]);
+        }
         dg::blas1::scal( yp, -m_nu);
     }
 
@@ -36,6 +40,7 @@ struct ImplicitPart
   private:
     double m_nu;
     dg::Elliptic<Geometry, Matrix, container> m_LaplacianM_perp;
+    container m_temp;
 };
 
 template< class Geometry,  class Matrix, class container >
