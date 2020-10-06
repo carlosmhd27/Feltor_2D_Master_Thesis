@@ -24,17 +24,18 @@ class Analyse ():
         self.Data  = Dataset(File_name, 'r', format="NETCDF4")
         self.input = json.loads(self.Data.inputfile)
         
-        self.x    = array(self.Data['x'][:])
-        self.Nx   = self.input['n_out'] * self.input['Nx_out'] ## Nx_out are the points out of the grid
-
-        self.y    = array(self.Data['y'][:])
-        self.Ny   = self.input['n_out'] * self.input['Ny_out']
+        self.x  = array(self.Data['x'][:])
+        self.y  = array(self.Data['y'][:])
+        ## Nx_out are the points out of the grid
+        self.Nx = self.input['n_out'] * self.input['Nx_out'] 
+        self.Ny = self.input['n_out'] * self.input['Ny_out']
         
         self.time    = array(self.Data['time'][:])
         self.tm_stps = len(self.time)
         
         self.ions      = array(self.Data['ions'][:])
         self.potential = array(self.Data['potential'][:])
+        self.vorticity = array(self.Data['vorticity'][:])
         
         self.Mass      = self.integrate('ions')
         self.Potential = self.integrate('potential')
