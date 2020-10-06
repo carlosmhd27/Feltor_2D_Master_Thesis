@@ -86,7 +86,7 @@ class Analyse ():
         if type(variable) == str:
             var = copy(self.Data[variable][:])
         else:
-            var = copy(var)
+            var = copy(variable)
             
         dim_var = ndim(var)
         if dim_var == 3 and dim_integral == 2:
