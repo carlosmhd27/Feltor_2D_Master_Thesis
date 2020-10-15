@@ -3,6 +3,7 @@ from scipy.io          import netcdf
 from scipy.integrate   import simps
 from boutdata          import collect
 from numpy             import tile, array, copy, ndim, shape, arange, roll
+from numpy             import correlate, average
 from matplotlib.pyplot import pcolormesh, show, plot, colorbar, title, savefig
 
 import numpy as np
@@ -74,7 +75,50 @@ class Analyse ():
         X, Y, t = copy(self.X_CM), copy(self.Y_CM), copy(self.time)
         D_x, D_y, D_t = X - roll(X, 1), Y - roll(Y, 1), t - roll(t, 1)
         self.V_CM_x, self.V_CM_y      = D_x / D_t, D_y / D_t
-        self.V_CM_x[0] = self.V_CM_y[0] = 0   
+        self.V_CM_x[0] = self.V_CM_y[0] = 0
+        
+    def c_corr_dt (self, X, Y):
+        '''
+        cross-correlation time-delay
+        '''
+        
+        if ndim(X) == 3:
+            x_cp = self.integrate(X)
+        if ndim(Y) == 3:
+            y_cp = self.integrate(Y)
+        
+        else:
+            x_cp = copy(X)
+            y_cp = copy(Y)
+            
+        dividendo = correlate(x_cp, y_cp, 'same')
+        ## Normalization:
+        divisor   = correlate(x_cp, x_cp)
+        divisor  *= correlate(y_cp, y_cp)
+
+        return dividendo / sqrt(divisor)
+    
+    def c_corr_sp (self, f, g, x0=None, y0=None, integrate = False, axis = 1):
+        '''
+        Spatial cross-correlation, x and y should not be integrated.
+        The integration part is only necessary if we make the cross correlation
+        for all the x0 or y0 spatial and we wanna reduce the dimensionality.
+        '''
+        
+        if type(x0) != type(None) and type(y0) == type(None):
+            fcg  = array([correlate(f[i, x0, :], g[i, x0, :], 'same') for i in range(len(f))])
+            axis = 1
+            
+        if type(x0) == type(None) and type(y0) != type(None):
+            fcg  = array([correlate(f[i, :, y0], g[i, :, y0], 'same') for i in range(len(x))])
+            axis = 0
+
+        fcg = average(fcg, axis = 0)
+
+        if integrate:
+            fcg = self.integrate(fcg, axis = axis) / ([self.x, self.y][axis][-1])
+
+        return fcg
     
     
     def integrate(self, variable, dim_integral = 2, axis = 1):
@@ -95,8 +139,8 @@ class Analyse ():
             
         else:
             if dim_var == 1:
-                axis = 0
-            Integral = simps(var, self.x, axis = axis)
+                axis  = 0
+            Integral = simps(var, [self.x, self.y][axis], axis = axis)
         
         return Integral
     
