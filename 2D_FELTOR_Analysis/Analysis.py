@@ -3,7 +3,7 @@ from scipy.io          import netcdf
 from scipy.integrate   import simps
 from boutdata          import collect
 from numpy             import tile, array, copy, ndim, shape, arange, roll
-from numpy             import correlate, average
+from numpy             import correlate, average, empty
 from matplotlib.pyplot import pcolormesh, show, plot, colorbar, title, savefig
 
 import numpy as np
@@ -105,12 +105,23 @@ class Analyse ():
         for all the x0 or y0 spatial and we wanna reduce the dimensionality.
         '''
         
+        nt, nx, ny = shape(f)
         if type(x0) != type(None) and type(y0) == type(None):
-            fcg  = array([correlate(f[i, x0, :], g[i, x0, :], 'same') for i in range(len(f))])
+            fcg = empty((nt, ny))
+            for i in range(nt):
+                auto_corr  = correlate(f[i, x0, :], f[i, x0, :]) 
+                auto_corr *= correlate(g[i, x0, :], g[i, x0, :])
+                cr_corr    = correlate(f[i, x0, :], g[i, x0, :], 'same')
+                fcg[i, :]  = cr_corr / sqrt(auto_corr)
             axis = 1
             
         if type(x0) == type(None) and type(y0) != type(None):
-            fcg  = array([correlate(f[i, :, y0], g[i, :, y0], 'same') for i in range(len(x))])
+            fcg = empty((nt, ny))
+            for i in range(nt):
+                auto_corr  = correlate(f[i, :, y0], f[i, :, y0]) 
+                auto_corr *= correlate(g[i, :, y0], g[i, :, y0])
+                cr_corr    = correlate(f[i, :, y0], g[i, :, y0], 'same')
+                fcg[i, :]  = cr_corr / sqrt(auto_corr)
             axis = 0
 
         fcg = average(fcg, axis = 0)
