@@ -98,38 +98,58 @@ class Analyse ():
 
         return dividendo / sqrt(divisor)
     
-    def c_corr_sp (self, f, g, x0=None, y0=None, integrate = False, axis = 1):
+        def c_corr_sp (self, f, g, x0=None, y0=None, integrate = False, axis = 1):
         '''
-        Spatial cross-correlation, x and y should not be integrated.
-        The integration part is only necessary if we make the cross correlation
-        for all the x0 or y0 spatial and we wanna reduce the dimensionality.
+        Spatial cross-correlation, x and y should not be integrated
         '''
-        
-        nt, nx, ny = shape(f)
-        if type(x0) != type(None) and type(y0) == type(None):
-            fcg = empty((nt, ny))
-            for i in range(nt):
-                auto_corr  = correlate(f[i, x0, :], f[i, x0, :]) 
-                auto_corr *= correlate(g[i, x0, :], g[i, x0, :])
-                cr_corr    = correlate(f[i, x0, :], g[i, x0, :], 'same')
-                fcg[i, :]  = cr_corr / sqrt(auto_corr)
-            axis = 1
-            
-        if type(x0) == type(None) and type(y0) != type(None):
-            fcg = empty((nt, ny))
-            for i in range(nt):
-                auto_corr  = correlate(f[i, :, y0], f[i, :, y0]) 
-                auto_corr *= correlate(g[i, :, y0], g[i, :, y0])
-                cr_corr    = correlate(f[i, :, y0], g[i, :, y0], 'same')
-                fcg[i, :]  = cr_corr / sqrt(auto_corr)
-            axis = 0
+
+        if not array_equal(shape(f), shape(g)):
+            raise Exception('The dimensions of f and g should be equal')
+
+        if type(x0) == None and type(y0) != None:
+            f_cp, g_cp = copy(transpose(f, (0, 2, 1))), copy(transpose(g, (0, 2, 1)))
+
+            z, axis    = copy(y0), 1
+
+            transpose_back = True
+
+        if type(x0) != None and type(y0) == None:
+            f_cp, g_cp = copy(f), copy(g)
+
+            z, axis = copy(x0), 0
+
+            transpose_back = False
+
+        else:
+            raise TypeError('One of the variables should be None, the other and int or an array of ints')
+
+        nt, nx, ny = shape(f_cp)
+        mz         = shape(z)
+
+        if len(mz) < 1:
+            mz, z = 1, [z]
+        else:
+            mz = mz[0]
+
+        fcg = empty((nt, mz, ny))
+        for i in range(nt):
+            for j in range(mz):
+                auto_corr  = correlate(f_cp[i, z[j], :], f_cp[i, z[j], :]) 
+                auto_corr *= correlate(g_cp[i, z[j], :], g_cp[i, z[j], :])
+                cr_corr    = correlate(f_cp[i, z[j], :], g_cp[i, z[j], :], 'same')
+                fcg[i, j, :]  = cr_corr / sqrt(auto_corr)
 
         fcg = average(fcg, axis = 0)
 
-        if integrate:
-            fcg = self.integrate(fcg, axis = axis) / ([self.x, self.y][axis][-1])
+        if transpose_back:
+            fcg = transpose(fcg)
 
-        return fcg
+        if integrate:
+            b   = [self.x, self.y][axis][-1]
+            a   = [self.x, self.y][axis][0]
+            fcg = self.integrate(fcg, axis = axis) / (b - a)
+
+        return squeeze(fcg)
     
     
     def integrate(self, variable, dim_integral = 2, axis = 1):
