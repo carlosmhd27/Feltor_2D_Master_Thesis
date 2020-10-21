@@ -95,7 +95,7 @@ class Analyse ():
 
         return corr
     
-def c_corr_sp (self, f, g, x0=None, y0=None, integrate = False, axis = 1):
+    def c_corr_sp (self, f, g, x0=None, y0=None, integrate = False, axis = 1):
         '''
         Spatial cross-correlation, x and y should not be integrated
         '''
