@@ -1,14 +1,12 @@
 from netCDF4           import Dataset
-from scipy.io          import netcdf
+from json              import loads
 from scipy.integrate   import simps
-from boutdata          import collect
-from numpy             import tile, array, copy, ndim, shape, arange, roll
-from numpy             import correlate, average, empty
+from numpy             import tile, array, copy, ndim, shape, arange, roll, sqrt 
+from numpy             import correlate, average, empty, array_equal, squeeze, transpose
 from matplotlib.pyplot import pcolormesh, show, plot, colorbar, title, savefig
 
 import numpy as np
 import matplotlib.pyplot as plt
-import json
 
 
 class Analyse ():
@@ -85,7 +83,7 @@ class Analyse ():
             raise Exception('The dimensions of f and g should be equal')
         
         nt, nx, ny = shape(f)
-        corr = np.empty((nt, nx, ny))
+        corr = empty((nt, nx, ny))
     
         for ix in range(nx):
             for iy in range(ny):
