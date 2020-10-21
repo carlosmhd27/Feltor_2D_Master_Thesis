@@ -1,6 +1,5 @@
-import json
-from subprocess import call
-from numpy      import copy
+from json import dump
+# from subprocess import call
 
 from IPython.display import clear_output
 
@@ -53,7 +52,7 @@ class FELTOR_Cpp ():
             
     def save_input (self):
         with open(self.input_file, 'w') as outfile:
-            json.dump(self.data, outfile, indent = 1)
+            dump(self.data, outfile, indent = 1)
     
     def run(self, save = True):
         if save:
