@@ -77,48 +77,41 @@ class Analyse ():
         self.V_CM_x, self.V_CM_y      = D_x / D_t, D_y / D_t
         self.V_CM_x[0] = self.V_CM_y[0] = 0
         
-    def c_corr_dt (self, X, Y):
+    def c_corr_dt (self, f, g):
         '''
         cross-correlation time-delay
         '''
+        if array_equal(shape(f), shape(g)):
+            raise Exception('The dimensions of f and g should be equal')
         
-        if ndim(X) == 3:
-            x_cp = self.integrate(X)
-        if ndim(Y) == 3:
-            y_cp = self.integrate(Y)
-        
-        else:
-            x_cp = copy(X)
-            y_cp = copy(Y)
-            
-        dividendo = correlate(x_cp, y_cp, 'same')
-        ## Normalization:
-        divisor   = correlate(x_cp, x_cp)
-        divisor  *= correlate(y_cp, y_cp)
-
-        return dividendo / sqrt(divisor)
+        nt, nx, ny = shape(f)
+        corr = np.empty((nt, nx, ny))
     
-        def c_corr_sp (self, f, g, x0=None, y0=None, integrate = False, axis = 1):
+        for ix in range(nx):
+            for iy in range(ny):
+                corr [:, ix, iy] = correlate(f[:, ix, iy], g[:, ix, iy], 'same')
+            
+        corr = self.integrate(corr) / ((self.x[-1] - self.x[0]) * (self.y[-1] - self.y[0]))
+
+        return corr
+    
+def c_corr_sp (self, f, g, x0=None, y0=None, integrate = False, axis = 1):
         '''
         Spatial cross-correlation, x and y should not be integrated
         '''
 
-        if not array_equal(shape(f), shape(g)):
+        if array_equal(shape(f), shape(g)):
             raise Exception('The dimensions of f and g should be equal')
 
-        if type(x0) == None and type(y0) != None:
-            f_cp, g_cp = copy(transpose(f, (0, 2, 1))), copy(transpose(g, (0, 2, 1)))
-
-            z, axis    = copy(y0), 1
-
-            transpose_back = True
-
-        if type(x0) != None and type(y0) == None:
-            f_cp, g_cp = copy(f), copy(g)
-
-            z, axis = copy(x0), 0
-
+        if type(x0) != type(None) and type(y0) == type(None):
+            f_cp, g_cp     = copy(f), copy(g)
+            z, axis        = copy(x0), 0
             transpose_back = False
+            
+        elif type(x0) == None and type(y0) != None:
+            f_cp, g_cp     = copy(transpose(f, (0, 2, 1))), copy(transpose(g, (0, 2, 1)))
+            z, axis        = copy(y0), 1
+            transpose_back = True
 
         else:
             raise TypeError('One of the variables should be None, the other and int or an array of ints')
@@ -126,24 +119,22 @@ class Analyse ():
         nt, nx, ny = shape(f_cp)
         mz         = shape(z)
 
-        if len(mz) < 1:
+        if len(mz) == 0:
             mz, z = 1, [z]
         else:
             mz = mz[0]
 
         fcg = empty((nt, mz, ny))
+        
         for i in range(nt):
             for j in range(mz):
-                auto_corr  = correlate(f_cp[i, z[j], :], f_cp[i, z[j], :]) 
-                auto_corr *= correlate(g_cp[i, z[j], :], g_cp[i, z[j], :])
-                cr_corr    = correlate(f_cp[i, z[j], :], g_cp[i, z[j], :], 'same')
-                fcg[i, j, :]  = cr_corr / sqrt(auto_corr)
+                fcg[i, j, :] = correlate(f_cp[i, z[j], :], g_cp[i, z[j], :], 'same')
 
         fcg = average(fcg, axis = 0)
 
         if transpose_back:
-            fcg = transpose(fcg)
-
+            fcg = transpose(fcg) 
+        
         if integrate:
             b   = [self.x, self.y][axis][-1]
             a   = [self.x, self.y][axis][0]
