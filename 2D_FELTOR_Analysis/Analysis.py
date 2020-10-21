@@ -81,7 +81,7 @@ class Analyse ():
         '''
         cross-correlation time-delay
         '''
-        if array_equal(shape(f), shape(g)):
+        if not array_equal(shape(f), shape(g)):
             raise Exception('The dimensions of f and g should be equal')
         
         nt, nx, ny = shape(f)
@@ -100,7 +100,7 @@ class Analyse ():
         Spatial cross-correlation, x and y should not be integrated
         '''
 
-        if array_equal(shape(f), shape(g)):
+        if not array_equal(shape(f), shape(g)):
             raise Exception('The dimensions of f and g should be equal')
 
         if type(x0) != type(None) and type(y0) == type(None):
