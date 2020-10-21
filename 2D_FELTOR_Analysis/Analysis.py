@@ -6,8 +6,6 @@ from numpy             import correlate, average, empty, array_equal, squeeze, t
 from matplotlib.pyplot import pcolormesh, show, plot, colorbar, title, savefig
 
 import numpy as np
-import matplotlib.pyplot as plt
-
 
 class Analyse ():
     ''' 
