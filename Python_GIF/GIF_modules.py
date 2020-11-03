@@ -14,6 +14,7 @@ import matplotlib.pyplot    as plt
 
 ftsz_title = 15
 ftsz_label = 12
+
 min_time         = 0
 max_time         = 0
 min_int_vort     = 0
