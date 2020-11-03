@@ -16,11 +16,8 @@ i   = 1   ## to reduce the number of points we use
 
 ## We define the directory where the outputs are located and confirm it exists
 dir_name  = '../marconi_outputs/hdiff_outputs/Per_Per/'
-exists    = os.path.isdir("./" + dir_name)
 
-## We define the file of the output and confirm it exists
-if not exists:
-    raise Exception('The directory does not exist.')
+assert os.path.isdir("./" + dir_name), 'The directory does not exist.'
     
 models = ['IC', 'HW_mod', 'HW_ord'] ## , 'IC', 'HW_mod', 'HW_ord' 'HW_ord_dt_0.01', 'HW_ord_dt_0.001', 'HW_ord_dt_0.0001', 'HW_ord_dt_1e-05'
 extra  = '_Neumann'
@@ -32,7 +29,7 @@ for model in models:
         overwrite = input("The GIF file already exists, do you wanna overwrite it?([Y]/n)\n")
         if overwrite not in ['y', 'ye', 'yes', 'Y', 'YE', 'YES', None]:
             GIF_name = input('Please, give a new name')
-            if GIF_name == None:
+            if GIF_name == 'None':
                 raise Exception('You must change the name of the GIF file')
             
 
@@ -51,40 +48,40 @@ for model in models:
 
     if not existance:
         information.write(f'{File_name} does not exist.')
+        continue
+        
+    ## We analysis the file and obtain the values we wanna measure
+    Analytics = Analyzed(File_name)
 
-    else:
-
-        ## We analysis the file and obtain the values we wanna measure
-        Analytics = Analyzed(File_name)
-
-
-        information.write('+' * 50 + "\n")
-        information.write(f'model: {model + extra}, with {len(Analytics.ions) // i} out of {len(Analytics.ions)} points in the GIF' + "\n")
-        information.write(f'The times goes from {Analytics.time[0]} to {Analytics.time[-1]}' + "\n")
-        information.write('+' * 50 + "\n")
-        information.write(f'The file started at {datetime.now()}'+ '\n')
-        information.write('+' * 50 + "\n")
-        information.close()
-
-        ## Generate the init function for the GIF, it needs the model the fig and the parameters
-        init_ = lambda : init(model = model + extra, Analytics = Analytics, ax = ax, fig = fig)
-
-        ## We define the format for writing the mp4 file
-#         Writer = animation.writers['ffmpeg']
-        writer = animation.PillowWriter(fps=fps, metadata=dict(artist='Me'), bitrate = 600)
-
-        ## We define the animation class and we save the animation, or show it 
-        ani = animation.FuncAnimation(fig, animate, np.arange(0, len(Analytics.ions), i),
-                                      fargs = (Analytics, ax),
-                                      init_func=init_, interval = 100)
-
-        ani.save(GIF_name)
-        # plt.show()
-        plt.clf()
-
-        stop = time.time()
-        information = open(info_file, 'a')
-        information.write('After {:.1f}h, I am done with model: {}'.format((stop - start) / 3600, model + extra) + 2 * "\n")
+    information.write('+' * 50 + "\n")
+    information.write(f'model: {model + extra}, with {len(Analytics.ions) // i} out of {len(Analytics.ions)} points in the GIF' + "\n")
+    information.write(f'The times goes from {Analytics.time[0]} to {Analytics.time[-1]}' + "\n")
+    information.write('+' * 50 + "\n")
+    information.write(f'The file started at {datetime.now()}'+ '\n')
+    information.write('+' * 50 + "\n")
     information.close()
+
+    ## Generate the init function for the GIF, it needs the model the fig and the parameters
+    init_    = lambda : init(model = model + extra, Analytics = Analytics, ax = ax, fig = fig)
+    animate_ = lambda pos, An, a: animate(pos, An, a, fig = fig)
+
+    ## We define the format for writing the mp4 file
+#         Writer = animation.writers['ffmpeg']
+    writer = animation.PillowWriter(fps=fps, metadata=dict(artist='Me'), bitrate = 600)
+
+    ## We define the animation class and we save the animation, or show it 
+    ani = animation.FuncAnimation(fig, animate_, np.arange(0, len(Analytics.ions), i),
+                                  fargs = (Analytics, ax),
+                                  init_func=init_, interval = 100) ## np.arange(1, len(Analytics.ions))
+
+    ani.save(GIF_name)
+    # plt.show()
+    plt.clf()
+
+    stop = time.time()
+    needed = stop - start
+    information = open(info_file, 'a')
+    information.write('After {} h and {:.1f} min, I am done with model: {}'.format(needed // 3600, needed / 60, model + extra) + 2 * "\n")
+information.close()
     
 print('Done')
