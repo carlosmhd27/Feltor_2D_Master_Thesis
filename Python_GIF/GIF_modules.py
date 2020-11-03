@@ -14,15 +14,12 @@ import matplotlib.pyplot    as plt
 
 ftsz_title = 15
 ftsz_label = 12
+cbar       = []
 
-min_time         = 0
-max_time         = 0
-min_int_vort     = 0
-max_int_vort     = 0
-min_Mass         = 0
-max_Mass         = 0
-min_int_vort_sqr = 0
-max_int_vort_sqr = 0
+min_time,         max_time         = 0, 0
+min_int_vort,     max_int_vort     = 0, 0
+min_Mass,         max_Mass         = 0, 0
+min_int_vort_sqr, max_int_vort_sqr = 0, 0
 
 def Analyzed (File_name):
     '''
@@ -38,14 +35,11 @@ def Analyzed (File_name):
     Analytics.int_vort     = Analytics.integrate('vorticity')
     Analytics.int_vort_sqr = Analytics.integrate(Analytics.vorticity ** 2)
     
-    min_time         = amin(Analytics.time)
-    max_time         = amax(Analytics.time)
-    min_int_vort     = amin(Analytics.int_vort)
-    max_int_vort     = amax(Analytics.int_vort)
-    min_Mass         = amin(Analytics.Mass)
-    max_Mass         = amax(Analytics.Mass)
-    min_int_vort_sqr = amin(Analytics.int_vort_sqr)
-    max_int_vort_sqr = amax(Analytics.int_vort_sqr)
+    min_time         = amin(Analytics.time);         max_time         = amax(Analytics.time)
+    min_int_vort     = amin(Analytics.int_vort);     max_int_vort     = amax(Analytics.int_vort)
+    min_Mass         = amin(Analytics.Mass);         max_Mass         = amax(Analytics.Mass)
+    min_int_vort_sqr = amin(Analytics.int_vort_sqr); max_int_vort_sqr = amax(Analytics.int_vort_sqr)
+    
     return Analitics
 
 def animate (position, Analytics, ax, fig):
@@ -81,6 +75,8 @@ def init(Analytics, ax, fig, model, pst = 0, suptitle = True):
     Initialization of the plots, set the limits in the graphics, labels, titles and scales
     '''
     
+    global cbar
+    
     if suptitle:
         fig.suptitle(model, fontsize=20)
     
@@ -112,14 +108,24 @@ def init(Analytics, ax, fig, model, pst = 0, suptitle = True):
     ax[1, 1].set_title('Ions density', fontsize = ftsz_title)
     ax[1, 2].set_title('Vorticity', fontsize = ftsz_title)
     
-    im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.potential[pst], cmap = 'plasma', shading = 'gouraud');
-    fig.colorbar(im1,ax=ax[1, 0])
+    im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.potential[pst], cmap = 'hot', shading = 'gouraud');
+
     
-    im2 = ax[1, 1].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[pst], cmap = 'plasma', shading = 'gouraud');
-    fig.colorbar(im2,ax=ax[1, 1])
+    im2 = ax[1, 1].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[pst], cmap = 'hot', shading = 'gouraud');
     
-    im3 = ax[1, 2].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[pst], cmap = 'plasma', shading = 'gouraud');
-    fig.colorbar(im3,ax=ax[1, 2])
+    im3 = ax[1, 2].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[pst], cmap = 'hot', shading = 'gouraud');
+    
+    if len(cbar) < 3:
+        cbar.append(fig.colorbar(im1,ax=ax[1, 0]))
+        cbar.append(fig.colorbar(im2,ax=ax[1, 1]))
+        cbar.append(fig.colorbar(im3,ax=ax[1, 2]))
+    else:
+        cbar[0].mappable.set_clim(vmin = amin(Analytics.potential[pst]), 
+                                  vmax = amax(Analytics.potential[pst]))
+        cbar[1].mappable.set_clim(vmin = amin(Analytics.ions[pst]),
+                                  vmax = amax(Analytics.ions[pst]))
+        cbar[2].mappable.set_clim(vmin = amin(Analytics.vorticity[pst]),
+                                  vmax = amax(Analytics.vorticity[pst])
 
     return ax
 
@@ -138,26 +144,39 @@ def init_mesh_contour(Analytics, ax, fig, model):
     ## Pcolormesh
     ## Potential, density, Vorticity
     ax[0].set_title('Potential over Ions density', fontsize = ftsz_title)
-    ax[0].contour(Analytics.x, Analytics.y, Analytics.potential[1], cmap = 'hot')
-    ax[0].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[0], cmap = 'hot', shading = 'gouraud')
     ax[1].set_title('Vorticity', fontsize = ftsz_title)
-    ax[1].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[0], cmap = 'hot', shading = 'gouraud');
     
     return ax
-def animate_mesh_contour (position, Analytics, ax):
+
+                                  def animate_mesh_contour (position, Analytics, ax):
     '''
     A function to update each frame
     '''
+    
+    global cbar
+    
     ## Pcolormesh
-    ## Potential
+    ## Potentia
+    
     ax[0].clear()
     ax[1].clear()
+    ax = init_mesh_contour(Analytics, ax, None, None, suptitle = False)
+
     ax[0].contour(Analytics.x, Analytics.y, Analytics.potential[position], cmap = 'hot')
     
     ## Density
-    ax[0].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[position], cmap = 'hot', shading = 'gouraud')
+    im1 = ax[0].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[position], cmap = 'hot', shading = 'gouraud')
 
     ## Vorticity
-    ax[1].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[position], cmap = 'hot', shading = 'gouraud');
-    plt.draw();
+    im2 = ax[1].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[position], cmap = 'hot', shading = 'gouraud')
+    if len(cbar) < 2:
+        cbar.append(fig.colorbar(im1,ax=ax[0]))
+        cbar.append(fig.colorbar(im2,ax=ax[1]))
+    else:
+        cbar[0].mappable.set_clim(vmin = amin(Analytics.ions[pst]),
+                                  vmax = amax(Analytics.ions[pst]))
+                                  
+        cbar[1].mappable.set_clim(vmin = amin(Analytics.vorticity[pst]),
+                                  vmax = amax(Analytics.vorticity[pst]))
+                                  
     return ax
