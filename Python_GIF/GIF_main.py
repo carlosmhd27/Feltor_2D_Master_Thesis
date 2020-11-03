@@ -27,10 +27,10 @@ for model in models:
     GIF_name = dir_name + f'video_{model + extra}.gif'
     if os.path.exists(GIF_name):
         overwrite = input("The GIF file already exists, do you wanna overwrite it?([Y]/n)\n")
-        if overwrite not in ['y', 'ye', 'yes', 'Y', 'YE', 'YES', None]:
+        if overwrite not in ['y', 'ye', 'yes', 'Y', 'YE', 'YES', '']:
             GIF_name = input('Please, give a new name')
-            if GIF_name == 'None':
-                raise Exception('You must change the name of the GIF file')
+            if GIF_name == '':
+                continue
             
 
     info_file = dir_name + f"info_{model + extra}.txt"
@@ -48,6 +48,7 @@ for model in models:
 
     if not existance:
         information.write(f'{File_name} does not exist.')
+        information.close()
         continue
         
     ## We analysis the file and obtain the values we wanna measure
@@ -82,6 +83,6 @@ for model in models:
     needed = stop - start
     information = open(info_file, 'a')
     information.write('After {} h and {:.1f} min, I am done with model: {}'.format(needed // 3600, needed / 60, model + extra) + 2 * "\n")
-information.close()
+    information.close()
     
 print('Done')
