@@ -91,3 +91,43 @@ def init(Analytics, ax, fig, model):
     ax[1, 2].set_title('Vorticity', fontsize = ftsz_title)
 
     return ax
+
+#=====================================================================================
+# For contour with color mesh
+#=====================================================================================
+
+def init_mesh_contour(Analytics, ax, fig, model):
+    '''
+    Initialization of the plots, set the limits in the graphics, labels, titles and scales
+    '''
+    
+    fig.suptitle(model, fontsize=20)
+    
+    ## Pcolormesh
+    ## Potential, density, Vorticity
+    ax[0].set_title('Potential over Ions density', fontsize = ftsz_title)
+    ax[0].contour(Analytics.x, Analytics.y, Analytics.potential[1], cmap = 'hot')
+    ax[0].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[0], cmap = 'hot', shading = 'gouraud')
+    ax[1].set_title('Vorticity', fontsize = ftsz_title)
+    ax[1].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[0], cmap = 'hot', shading = 'gouraud');
+    
+    return ax
+def animate_mesh_contour (position, Analytics, ax):
+    '''
+    A function to update each frame
+    '''
+    ## Clear the axis to delete allplots before adding more
+    ax[0].clear()
+    ax[1].clear()
+    ## Contour
+    ## Potential
+    ax[0].contour(Analytics.x, Analytics.y, Analytics.potential[position], cmap = 'hot')
+    
+    #Pcolormesh
+    ## Density
+    ax[0].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[position], cmap = 'hot', shading = 'gouraud')
+
+    ## Vorticity
+    ax[1].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[position], cmap = 'hot', shading = 'gouraud');
+    plt.draw();
+    return ax
