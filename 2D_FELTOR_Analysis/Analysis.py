@@ -19,7 +19,7 @@ class Analyse ():
         Also calculate the Center of Mass
         '''
         self.Data  = Dataset(File_name, 'r', format="NETCDF4")
-        self.input = json.loads(self.Data.inputfile)
+        self.input = loads(self.Data.inputfile)
         
         self.x  = array(self.Data['x'][:])
         self.y  = array(self.Data['y'][:])
