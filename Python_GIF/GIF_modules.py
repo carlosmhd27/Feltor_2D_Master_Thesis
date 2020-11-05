@@ -40,7 +40,7 @@ def Analyzed (File_name):
     min_Mass         = amin(Analytics.Mass);         max_Mass         = amax(Analytics.Mass)
     min_int_vort_sqr = amin(Analytics.int_vort_sqr); max_int_vort_sqr = amax(Analytics.int_vort_sqr)
     
-    return Analitics
+    return Analytics
 
 def animate (position, Analytics, ax, fig):
     '''
@@ -125,7 +125,7 @@ def init(Analytics, ax, fig, model, pst = 0, suptitle = True):
         cbar[1].mappable.set_clim(vmin = amin(Analytics.ions[pst]),
                                   vmax = amax(Analytics.ions[pst]))
         cbar[2].mappable.set_clim(vmin = amin(Analytics.vorticity[pst]),
-                                  vmax = amax(Analytics.vorticity[pst])
+                                  vmax = amax(Analytics.vorticity[pst]))
 
     return ax
 
@@ -148,7 +148,7 @@ def init_mesh_contour(Analytics, ax, fig, model):
     
     return ax
 
-                                  def animate_mesh_contour (position, Analytics, ax):
+def animate_mesh_contour (position, Analytics, ax):
     '''
     A function to update each frame
     '''
