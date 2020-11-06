@@ -174,10 +174,10 @@ def animate_mesh_contour (position, Analytics, ax, fig):
         cbar.append(fig.colorbar(im1,ax=ax[0]))
         cbar.append(fig.colorbar(im2,ax=ax[1]))
     else:
-        cbar[0].mappable.set_clim(vmin = amin(Analytics.ions[pst]),
-                                  vmax = amax(Analytics.ions[pst]))
+        cbar[0].mappable.set_clim(vmin = amin(Analytics.ions[position]),
+                                  vmax = amax(Analytics.ions[position]))
                                   
-        cbar[1].mappable.set_clim(vmin = amin(Analytics.vorticity[pst]),
-                                  vmax = amax(Analytics.vorticity[pst]))
+        cbar[1].mappable.set_clim(vmin = amin(Analytics.vorticity[position]),
+                                  vmax = amax(Analytics.vorticity[position]))
                                   
     return ax
