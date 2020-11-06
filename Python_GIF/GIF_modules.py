@@ -2,7 +2,7 @@ import matplotlib
 matplotlib.use("Agg")
 
 import sys
-sys.path.i1nsert(1, '../2D_FELTOR_Analysis/')
+sys.path.insert(1, '../2D_FELTOR_Analysis/')
 
 from Analysis          import Analyse
 from matplotlib.pyplot import axis, savefig, pcolormesh, imshow, show, figure
@@ -50,7 +50,7 @@ def animate (position, Analytics, ax, fig):
     for i in range(3):
         for j in range(2):
             ax[j, i].clear()
-    ax = init(Analytics, ax, fig, None, suptitle = False)
+    ax = init(Analytics, ax, fig, position, suptitle = False)
 
     ### Plots
     ## Center of mass    
@@ -98,8 +98,8 @@ def init(Analytics, ax, fig, model, pst = 0, suptitle = True):
     ## Integrated Vorticity square ** 2
     ax[0, 2].set_xlabel('Time', fontsize = ftsz_label)
     ax[0, 2].set_ylabel(r'Integrated $\omega^2$', fontsize = ftsz_label)
-    ax[0, 1].set_xlim(min_time - 0.5, max_time + 0.5)
-    ax[0, 0].set_ylim(min_int_vort_sqr - 0.5, max_int_vort_sqr + 0.5)
+    ax[0, 2].set_xlim(min_time - 0.5, max_time + 0.5)
+    ax[0, 2].set_ylim(min_int_vort_sqr - 0.5, max_int_vort_sqr + 0.5)
     ax[0, 2].set_title('Integrated Vorticity Square', fontsize = ftsz_title)
     
     ## Pcolormesh
@@ -134,12 +134,13 @@ def init(Analytics, ax, fig, model, pst = 0, suptitle = True):
 # For contour with color mesh
 #=====================================================================================
 
-def init_mesh_contour(Analytics, ax, fig, model):
+def init_mesh_contour(Analytics, ax, fig = None, model = None, suptitle = True):
     '''
     Initialization of the plots, set the limits in the graphics, labels, titles and scales
     '''
     
-    fig.suptitle(model, fontsize=20)
+    if suptitle:
+        fig.suptitle(model, fontsize=20)
     
     ## Pcolormesh
     ## Potential, density, Vorticity
@@ -148,7 +149,7 @@ def init_mesh_contour(Analytics, ax, fig, model):
     
     return ax
 
-def animate_mesh_contour (position, Analytics, ax):
+def animate_mesh_contour (position, Analytics, ax, fig):
     '''
     A function to update each frame
     '''
@@ -160,7 +161,7 @@ def animate_mesh_contour (position, Analytics, ax):
     
     ax[0].clear()
     ax[1].clear()
-    ax = init_mesh_contour(Analytics, ax, None, None, suptitle = False)
+    ax = init_mesh_contour(Analytics, ax, suptitle = False)
 
     ax[0].contour(Analytics.x, Analytics.y, Analytics.potential[position], cmap = 'hot')
     
