@@ -44,23 +44,22 @@ for model in models:
     ## Initiation of the figure
     fig, ax = plt.subplots(2, 3, figsize=(24, 12))
 
-    information = open(info_file, 'a')
-
     if not existance:
-        information.write(f'{File_name} does not exist.')
-        information.close()
+        with open(info_file, 'a') as information:
+            information.write(f'{File_name} does not exist.')
         continue
         
     ## We analysis the file and obtain the values we wanna measure
     Analytics = Analyzed(File_name)
 
-    information.write('+' * 50 + "\n")
-    information.write(f'model: {model + extra}, with {len(Analytics.ions) // i} out of {len(Analytics.ions)} points in the GIF' + "\n")
-    information.write(f'The times goes from {Analytics.time[0]} to {Analytics.time[-1]}' + "\n")
-    information.write('+' * 50 + "\n")
-    information.write(f'The file started at {datetime.now()}'+ '\n')
-    information.write('+' * 50 + "\n")
-    information.close()
+    with open(info_file, 'a') as information:
+        information.write('+' * 50 + "\n")
+        information.write(f'model: {model + extra}, with {len(Analytics.ions) // i} out of {len(Analytics.ions)} points in the GIF' + "\n")
+        information.write(f'The times goes from {Analytics.time[0]} to {Analytics.time[-1]}' + "\n")
+        information.write('+' * 50 + "\n")
+        information.write(f'The file started at {datetime.now()}'+ '\n')
+        information.write('+' * 50 + "\n")
+
 
     ## Generate the init function for the GIF, it needs the model the fig and the parameters
     init_    = lambda : init(model = model + extra, Analytics = Analytics, ax = ax, fig = fig)
@@ -81,8 +80,9 @@ for model in models:
 
     stop = time.time()
     needed = stop - start
-    information = open(info_file, 'a')
-    information.write('After {} h and {:.1f} min, I am done with model: {}'.format(needed // 3600, needed / 60, model + extra) + 2 * "\n")
-    information.close()
+    nd_hr = needed // 3600
+    nd_mn = (needed % 3600) * 60
+    with open(info_file, 'a') as information:
+        information.write('After {} h and {:.1f} min, I am done with model: {}'.format(nd_mn, nd_hr, model + extra) + 2 * "\n")
     
 print('Done')
