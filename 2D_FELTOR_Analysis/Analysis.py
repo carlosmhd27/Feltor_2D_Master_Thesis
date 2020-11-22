@@ -1,14 +1,11 @@
 from netCDF4           import Dataset
 from json              import loads
 from scipy.integrate   import simps
-# from boutdata          import collect
-# from scipy.signal      import correlate2d
 from numpy             import tile, array, copy, ndim, shape, arange, roll, sqrt, conjugate
 from numpy             import correlate, average, empty, array_equal, squeeze, transpose
 from matplotlib.pyplot import pcolormesh, show, plot, colorbar, title, savefig
 
 import numpy as np
-# import matplotlib.pyplot as plt
 
 
 class Analyse ():
@@ -149,41 +146,7 @@ class Analyse ():
         if save != None and type(save) == str:
             savefig(save)
         show();
-        
-#     def c_corr_dt (self, f, g):
-#         '''
-#         cross-correlation time-delay
-#         '''
-        
-#         assert array_equal(shape(f), shape(g)), 'The dimensions of f and g should be equal'
-
-#         nt, nx, ny = shape(f)
-#         corr = empty((nt, nx, ny))
-
-#         for ix in range(nx):
-#             for iy in range(ny):
-#                 corr [:, ix, iy] = correlate(f[:, ix, iy], g[:, ix, iy], 'same')
-
-#         corr = self.integrate(corr) / ((self.x[-1] - self.x[0]) * (self.y[-1] - self.y[0]))
-
-#         return corr
-    
-#     def CC (self, f, g, time_units = 1, steps = None):
-#         '''
-#         As the correlate function from numpy does not allow
-#         us to make the correlate for a given time.
-#         Important to notice that it does not make the conjugate of g,
-#         this is done in c_corr_dt
-#         '''
-#         if steps == None:
-#             steps = int(time_units / self.dt) + 1
-        
-#         corr  = empty((2 * steps + 1, self.Nx, self.Ny))
-#         for i in range(-steps, steps + 1):
-#             corr[steps + i, :, :] = np.sum((f * roll(g, i, axis=0))[steps : -steps], axis=0)
-
-#         return corr
-
+   
     
     def c_corr_dt (self, f, g, time_units = 1):
         '''
@@ -204,18 +167,6 @@ class Analyse ():
 
         corr = self.integrate(corr, 1, axis = 2) / self.ly
 
-        return corr
-    
-    def CC_sp (self, f, g, nt = None, mz = None, steps = None):
-    
-        if steps == None:
-            nt, mz, steps = shape(f)
-            steps = int(steps / 2)
-            
-        corr  = empty((nt, mz, 2 * steps + 1))
-
-        for i in range(-steps, steps + 1):
-            corr[:,:, steps + i] = self.integrate((f * roll(g, i,axis=2)),1,axis=2)/ self.ly
         return corr
 
     def c_corr_sp (self, f, g, x0=None, y0=None, integrate = False):
@@ -246,18 +197,12 @@ class Analyse ():
             z = [z]
             
         f_cp, g_cp = f_cp[:, z, :], g_cp[:, z, :]
-        
-#         fcg = empty((nt, mz, ny))
-#         for i in range(nt):
-#             for j in range(mz):
-#                 fcg[i, j, :] = correlate(f_cp[i, z[j], :], g_cp[i, z[j], :], 'same')
                 
         steps = int(ny / 2)
         fcg = empty((nt, mz, 2 * steps + 1))
         for i in range(-steps, steps + 1):
             fcg[:,:, steps + i] = self.integrate((f_cp * roll(g_cp,i,axis=2)),1,axis=2) 
             fcg[:,:, steps + i] /= self.ly
-#         fcg = self.CC_sp (f_cp, g_cp, nt, mz, steps = ny // 2)
 
         fcg = average(fcg, axis = 0)
 
@@ -287,21 +232,24 @@ class Essential():
         
         self.Data.close()
         
-    def c_corr_dt (self, f, g):
+        def c_corr_dt (self, f, g, time_units = 1):
         '''
         cross-correlation time-delay
         '''
-        if not array_equal(shape(f), shape(g)):
-            raise Exception('The dimensions of f and g should be equal')
 
-        nt, nx, ny = shape(f)
-        corr = empty((nt, nx, ny))
+        assert array_equal(shape(f), shape(g)), 'The dimensions of f and g should be equal'
+        
+        ## + 1 because we wanna do [-time_units, time_units]
+        steps  = int(time_units / self.dt) + 1
+        corr   = empty((2 * steps + 1, self.Nx, self.Ny))
+        nt     = len(f)
+        g_conj = conjugate(g)
 
-        for ix in range(nx):
-            for iy in range(ny):
-                corr [:, ix, iy] = correlate(f[:, ix, iy], g[:, ix, iy], 'same')
+        corr  = empty((2 * steps + 1, self.Nx, self.Ny))
+        for i in range(-steps, steps + 1):
+            corr[steps + i, :, :] = np.sum((f * roll(g_conj, i, axis=0))[steps : -steps], axis=0) / (nt - 2 * steps)
 
-        corr = self.integrate(corr) / ((self.x[-1] - self.x[0]) * (self.y[-1] - self.y[0]))
+        corr = self.integrate(corr, 1, axis = 2) / self.ly
 
         return corr
 
@@ -309,17 +257,17 @@ class Essential():
         '''
         Spatial cross-correlation, x and y should not be integrated
         '''
+        
+        assert array_equal(shape(f), shape(g)), 'The dimensions of f and g should be equal'
 
-        if not array_equal(shape(f), shape(g)):
-            raise Exception('The dimensions of f and g should be equal')
 
         if type(x0) != type(None) and type(y0) == type(None):
-            f_cp, g_cp     = copy(f), copy(g)
+            f_cp, g_cp     = copy(f), conjugate(g)
             z, axis        = copy(x0), 0
             transpose_back = False
 
-        elif type(x0) == None and type(y0) != None:
-            f_cp, g_cp     = copy(transpose(f, (0, 2, 1))), copy(transpose(g, (0, 2, 1)))
+        elif type(x0) == type(None) and type(y0) != type(None):
+            f_cp, g_cp     = transpose(f, (0, 2, 1)), conjugate(transpose(g, (0, 2, 1)))
             z, axis        = copy(y0), 1
             transpose_back = True
 
@@ -327,19 +275,18 @@ class Essential():
             raise TypeError('One of the variables should be None, the other and int or an array of ints')
 
         nt, nx, ny = shape(f_cp)
-        mz         = shape(z)
-
-        if len(mz) == 0:
-            mz, z = 1, [z]
-        else:
-            mz = mz[0]
-
-        fcg = empty((nt, mz, ny))
-
-        for i in range(nt):
-            for j in range(mz):
-                fcg[i, j, :] = correlate(f_cp[i, z[j], :], g_cp[i, z[j], :], 'same')
-     
+        mz         = shape(z)[0]
+        
+        if mz == 0:
+            z = [z]
+            
+        f_cp, g_cp = f_cp[:, z, :], g_cp[:, z, :]
+                
+        steps = int(ny / 2)
+        fcg = empty((nt, mz, 2 * steps + 1))
+        for i in range(-steps, steps + 1):
+            fcg[:,:, steps + i] = self.integrate((f_cp * roll(g_cp,i,axis=2)),1,axis=2) 
+            fcg[:,:, steps + i] /= self.ly
 
         fcg = average(fcg, axis = 0)
 
@@ -347,9 +294,8 @@ class Essential():
             fcg = transpose(fcg) 
 
         if integrate:
-            b   = [self.x, self.y][axis][-1]
-            a   = [self.x, self.y][axis][0]
-            fcg = self.integrate(fcg, axis = axis) / (b - a)
+            l   = [self.lx, self.ly][axis]
+            fcg = self.integrate(fcg, axis = axis) / l
 
         return squeeze(fcg)
 
