@@ -50,19 +50,19 @@ def animate (position, Analytics, ax, fig):
     for i in range(3):
         for j in range(2):
             ax[j, i].clear()
-    ax = init(Analytics, ax, fig, position, suptitle = False)
+    ax = init(Analytics, ax, fig, None, pst = position, suptitle = False)
 
     ### Plots
     ## Center of mass    
     ## Integrated Vorticity
-    ax[0, 0].plot(Analytics.time[:position+1], Analytics.int_vort[:position+1], color='tab:blue'); 
+    ax[0, 0].plot(Analytics.time[:position+1], Analytics.int_vort[:position+1], color='tab:blue')
     
     ## Mass
-    ax[0, 1].plot(Analytics.time[:position+1], Analytics.Mass[:position+1], color='tab:blue'); 
+    ax[0, 1].plot(Analytics.time[:position+1], Analytics.Mass[:position+1], color='tab:blue')
 
     
     ## Integrated Vorticity square ** 2
-    ax[0, 2].plot(Analytics.time[:position+1], Analytics.int_vort_sqr[:position+1], color='tab:blue'); 
+    ax[0, 2].plot(Analytics.time[:position+1], Analytics.int_vort_sqr[:position+1], color='tab:blue')
 
     ## The colormesh get updated when colling init
     ## This happens because we wanna put the colorbar from the biegining
