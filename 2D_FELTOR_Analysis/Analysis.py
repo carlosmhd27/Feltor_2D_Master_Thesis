@@ -232,7 +232,7 @@ class Essential():
         
         self.Data.close()
         
-        def c_corr_dt (self, f, g, time_units = 1):
+    def c_corr_dt (self, f, g, time_units = 1):
         '''
         cross-correlation time-delay
         '''
