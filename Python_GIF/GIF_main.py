@@ -2,7 +2,7 @@ from GIF_modules import Analyzed, animate, init
 from datetime    import datetime
 from os.path     import join, exists, isdir
 from os          import remove
-from sys         import argv
+# from sys         import argv
 from time        import time
 from numpy       import arange
 from mpi4py      import MPI
@@ -84,8 +84,8 @@ for model in models:
     stop   = time()
     needed = stop - start
     nd_hr  = needed // 3600
-    nd_mn  = (needed % 3600) * 60
+    nd_mn  = needed % 60
     with open(info_file, 'a') as information:
-        information.write('After {} h and {:.1f} min, I am done with model: {}'.format(nd_mn, nd_hr, model + extra) + 2 * "\n")
+        information.write('After {} h and {:.1f} min, I am done with model: {}'.format(nd_hr, nd_mn, model + extra) + 2 * "\n")
     
 print('Done')
