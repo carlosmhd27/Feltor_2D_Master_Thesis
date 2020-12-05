@@ -1,12 +1,11 @@
 from netCDF4           import Dataset
 from json              import loads
 from scipy.integrate   import simps
+from scipy.signal      import csd
 from numpy             import tile, array, copy, ndim, shape, arange, roll, sqrt, conjugate
 from numpy             import correlate, average, empty, array_equal, squeeze, transpose
+from numpy             import gradient, angle, absolute, sum
 from matplotlib.pyplot import pcolormesh, show, plot, colorbar, title, savefig
-
-import numpy as np
-
 
 class Analyse ():
     ''' 
@@ -36,6 +35,7 @@ class Analyse ():
         self.ions      = array(self.Data['ions'][:])
         self.potential = array(self.Data['potential'][:])
         self.vorticity = array(self.Data['vorticity'][:])
+        self.v_r       = - gradient(self.potential, self.y, axis = 2)
         
         self.Mass      = self.integrate('ions') / (self.lx * self.ly)
         self.Potential = self.integrate('potential') / (self.lx * self.ly)
@@ -163,7 +163,7 @@ class Analyse ():
 
         corr  = empty((2 * steps + 1, self.Nx, self.Ny))
         for i in range(-steps, steps + 1):
-            corr[steps + i, :, :] = np.sum((f * roll(g_conj, i, axis=0))[steps : -steps], axis=0) / (nt - 2 * steps)
+            corr[steps + i, :, :] = sum((f * roll(g_conj, i, axis=0))[steps : -steps], axis=0) / (nt - 2 * steps)
 
         corr = self.integrate(corr, 1, axis = 2) / self.ly
 
@@ -215,6 +215,35 @@ class Analyse ():
 
         return squeeze(fcg)
     
+    def cpsd(self, f, g, fs = None, x0=None, y0=None, after = True, **kwargs):
+        '''
+        Function to calculate the Cross - power Spectral density
+        '''
+        
+        assert array_equal(shape(f), shape(g)), 'The dimensions of f and g should be equal'
+        
+        if type(x0) != type(None) and type(y0) == type(None):
+            f_cp, g_cp     = copy(f[:, x0, :]), copy(g[:, x0, :])
+            z, axis        = copy(x0), 1
+
+        elif type(x0) == type(None) and type(y0) != type(None):
+            f_cp, g_cp  = transpose(f, (0, 2, 1))[:, y0, :], transpose(g, (0, 2, 1))[:, y0, :]
+            axis        = 0
+
+        else:
+            raise TypeError('One of the variables should be None, the other and int or an array of ints')
+        if fs == None:
+            fs = 1 / self.dt
+                            
+        f, PFG = csd(f_cp, g_cp, fs, axis = 0, **kwargs)
+        l      = [self.lx, self.ly][axis]
+        
+        PFG = self.integrate(PFG, 1, axis = -1) / l
+
+        Amp = absolute(PFG)
+        Ang = angle(PFG)
+            
+        return Amp, Ang, f
     
 class Essential():
     """ Empty class, used to create ad hoc objects """
@@ -247,7 +276,7 @@ class Essential():
 
         corr  = empty((2 * steps + 1, self.Nx, self.Ny))
         for i in range(-steps, steps + 1):
-            corr[steps + i, :, :] = np.sum((f * roll(g_conj, i, axis=0))[steps : -steps], axis=0) / (nt - 2 * steps)
+            corr[steps + i, :, :] = sum((f * roll(g_conj, i, axis=0))[steps : -steps], axis=0) / (nt - 2 * steps)
 
         corr = self.integrate(corr, 1, axis = 2) / self.ly
 
