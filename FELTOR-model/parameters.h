@@ -67,8 +67,8 @@ struct Parameters
         os << "Physical parameters are: \n"
             <<"    Viscosity:       = "<<nu<<"\n"
             <<"    Curvature:       = "<<kappa<<"\n"
-			<<"  density profile:   = "<<g<<"\n"
-			<<" adiabatic parameter = "<<alpha<<"\n";
+	    <<"  density profile:   = "<<g<<"\n"
+	    <<" adiabatic parameter = "<<alpha<<"\n";
         os  <<"Blob parameters are: \n"
             << "    width:        "<<sigma<<"\n"
             << "    amplitude:    "<<amp<<"\n"
