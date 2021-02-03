@@ -20,9 +20,7 @@ class Analyse ():
         '''
         self.Data  = Dataset(File_name, Access_Mode, format="NETCDF4", parallel = parallel)
         self.input = loads(self.Data.inputfile)
-        self.model = self.input['model']
-        if self.model == 'HW':
-            self.model = 'HW_mod' if self.input['modified'] else 'HW_ord'
+        self.find_model()
         
         self.x  = array(self.Data['x'][:])
         self.y  = array(self.Data['y'][:])
@@ -45,6 +43,19 @@ class Analyse ():
         self.Potential = self.integrate('potential') / (self.lx * self.ly)
         self.Mass_err  = (self.Mass[0] - self.Mass) / self.Mass[0]
 #         self.CM(); self.V_CM()
+
+    def find_model(self):
+        self.model = self.input['model']
+        if 'HW' in self.model:
+            model = self.model
+            md_ln = len(model)
+            pos   = model.find('HW')
+            if self.input['modified']:
+                self.model = model[:pos + 2] + '_mod'
+            else:
+                self.model = model[:pos + 2] + '_ord'
+            if pos + 2 < len(model):
+                self.model += model[pos + 2:]
 
     def CM(self):
         '''
