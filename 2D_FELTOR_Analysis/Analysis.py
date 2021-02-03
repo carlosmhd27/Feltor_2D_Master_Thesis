@@ -20,6 +20,9 @@ class Analyse ():
         '''
         self.Data  = Dataset(File_name, Access_Mode, format="NETCDF4", parallel = parallel)
         self.input = loads(self.Data.inputfile)
+        self.model = self.input['model']
+        if self.model == 'HW':
+            self.model = 'HW_mod' if self.input['modified'] else 'HW_ord'
         
         self.x  = array(self.Data['x'][:])
         self.y  = array(self.Data['y'][:])
@@ -35,7 +38,8 @@ class Analyse ():
         self.ions      = array(self.Data['ions'][:])
         self.potential = array(self.Data['potential'][:])
         self.vorticity = array(self.Data['vorticity'][:])
-        self.v_r       = - gradient(self.potential, self.y, axis = 2)
+        self.v_r       = gradient(self.potential, self.y, axis = 2)
+        ### V_r does not need a negative sign cause the potential is defined negative
         
         self.Mass      = self.integrate('ions') / (self.lx * self.ly)
         self.Potential = self.integrate('potential') / (self.lx * self.ly)
@@ -52,8 +56,8 @@ class Analyse ():
         X_mat = tile(self.x.reshape(self.Nx, 1), self.Ny)
         Y_mat = tile(self.y.reshape(self.Ny, 1), self.Nx).transpose()
         
-        self.X_CM = self.integrate(X_mat * self.ions) / self.Mass 
-        self.Y_CM = self.integrate(Y_mat * self.ions) / self.Mass
+        self.X_CM = self.integrate(X_mat * self.ions) / (self.lx * self.ly * self.Mass)
+        self.Y_CM = self.integrate(Y_mat * self.ions) / (self.lx * self.ly * self.Mass)
         
     def V_CM(self):
         '''
@@ -61,17 +65,10 @@ class Analyse ():
         for all the time steps
         The velocidty of the Center of Mass is a 2D vector, for that reason we
         obtain 2 coordinate, X and Y, separately.
-        In this case it is calculated as V = (x_i - x_i-1) / (t_i - t_i-1)
-        For that reason V(0) = (0, 0), this prevent as from having an arbitrary
-        speed for the las position.
         '''
         
-        
-        D_x, D_y = self.X_CM - roll(self.X_CM, 1), self.Y_CM - roll(self.Y_CM, 1)
-        D_t      = self.time - roll(self.time, 1)
-        
-        self.V_CM_x,     self.V_CM_y    = D_x / D_t, D_y / D_t
-        self.V_CM_x[0] = self.V_CM_y[0] = 0    
+        self.V_CM_x = gradient(self.X_CM, self.time)
+        self.V_CM_y = gradient(self.Y_CM, self.time)
     
     def integrate(self, variable, dim_integral = 2, axis = 1, typ = 't'):
         '''
