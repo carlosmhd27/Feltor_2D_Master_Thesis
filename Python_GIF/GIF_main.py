@@ -2,10 +2,9 @@ from GIF_modules import Analyzed, animate, init
 from datetime    import datetime
 from os.path     import join, exists, isdir
 from os          import remove
-# from sys         import argv
+from sys         import argv
 from time        import time
 from numpy       import arange
-from mpi4py      import MPI
 
 from matplotlib.pyplot    import clf, show, subplots
 from matplotlib.animation import writers, FuncAnimation, PillowWriter
@@ -18,12 +17,20 @@ fps = 5
 i   = 1   ## to reduce the number of points we use
 
 ## We define the directory where the outputs are located and confirm it exists
-dir_name  = '../marconi_outputs/hdiff_outputs/Per_Per/'
+# dir_name  = '../marconi_outputs/hdiff_outputs/Per_Per/'
+## Normally, the directory is given as an extra argument when calling the function
+dir_name = argv[1]
 
-assert isdir("./" + dir_name), 'The directory does not exist.'
-    
-models = ['IC', 'HW_mod', 'HW_ord'] ## , 'IC', 'HW_mod', 'HW_ord' 'HW_ord_dt_0.01', 'HW_ord_dt_0.001', 'HW_ord_dt_0.0001', 'HW_ord_dt_1e-05'
-extra  = '_Neumann'
+assert isdir(dir_name), 'The directory does not exist.'
+
+extra = '_main'
+if 'Mix' in dir_name:
+    models = ['HW_ord', 'HW_mod']
+if 'tanh' in dir_name:
+    models = ["IC_HW_mod", "IC_HW_ord", 'HW_mod_IC', 'HW_ord_IC']
+else:
+    models = ['IC', 'HW_ord', 'HW_mod']
+
 
 for model in models:
     
@@ -65,12 +72,12 @@ for model in models:
 
 
     ## Generate the init function for the GIF, it needs the model the fig and the parameters
-    init_    = lambda : init(model = model + extra, Analytics = Analytics, ax = ax, fig = fig)
+    init_    = lambda : init(model = model, Analytics = Analytics, ax = ax, fig = fig, extra = extra)
     animate_ = lambda pos, An, a: animate(pos, An, a, fig = fig)
 
     ## We define the format for writing the mp4 file
-#         Writer = writers['ffmpeg']
-    writer = PillowWriter(fps=fps, metadata=dict(artist='Me'), bitrate = 600)
+    Writer = writers['ffmpeg']
+    writer = Writer(fps=fps, metadata=dict(artist='Me'), bitrate = 600)
 
     ## We define the animation class and we save the animation, or show it 
     ani = FuncAnimation(fig, animate_, np.arange(0, len(Analytics.ions), i),
@@ -84,7 +91,7 @@ for model in models:
     stop   = time()
     needed = stop - start
     nd_hr  = needed // 3600
-    nd_mn  = needed % 60
+    nd_mn  = (needed / 3600 - nd_hr) * 60
     with open(info_file, 'a') as information:
         information.write('After {} h and {:.1f} min, I am done with model: {}'.format(nd_hr, nd_mn, model + extra) + 2 * "\n")
     
