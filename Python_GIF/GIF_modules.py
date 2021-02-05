@@ -151,7 +151,7 @@ def animate_mesh_contour (position, Analytics, ax, fig):
 
     ## Contour
     # Potential
-    ax = init_mesh_contour(Analytics, ax, suptitle = False)
+    ax = init_mesh_contour(Analytics, ax, fig, suptitle = False)
     ax[1].contour(Analytics.x, Analytics.y, Analytics.potential[position], cmap = 'hot')
     
     ## Pcolormesh
