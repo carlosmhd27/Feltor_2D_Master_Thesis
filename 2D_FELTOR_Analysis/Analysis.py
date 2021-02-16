@@ -333,7 +333,7 @@ class units():
     fuel, generally Deuterium D, otherwise give m_i in kg (use scipy.constants 
     m_n and m_p for simplicity) 
     '''
-    def init(self, R_0 = None, a = None, B = 1, T_e = 20, nucleus = 'D', m_i = None):
+    def __init__(self, R_0 = None, a = None, B = 1, T_e = 20, nucleus = 'D', m_i = None):
         self.R_0 = R_0, self.a = a, self.B = B
         self.T_e = T_e if T_e >= 1 else T_e / e
         self.m_i = m_p + m_n if nucleus == 'D' else m_i
