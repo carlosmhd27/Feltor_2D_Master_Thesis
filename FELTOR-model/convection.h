@@ -76,7 +76,6 @@ struct ExplicitPart
     const double m_kappa, m_nu, m_alpha;
     double m_g;
     const container m_x, m_vol2d;
-	
 
     container m_phi, m_temp, m_phi_perturbation, m_n_perturbation;
     std::array<container,2> m_lapy;
@@ -89,7 +88,7 @@ struct ExplicitPart
     dg::MultigridCG2d<Geometry, Matrix, container> m_multigrid;
     std::vector<dg::Elliptic<Geometry, Matrix, container> > m_multi_pol;
     dg::Extrapolation<container> m_old_phi;
-	
+
 	dg::Average<container> m_average;
 
     std::array<double,4> m_invariant, m_invariant_diss;
@@ -110,7 +109,7 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     m_old_phi( 2, m_phi),
     m_average(grid, dg::coo2d::y)
 {
-	m_g += -p.kappa;
+    m_g += -p.kappa;
     //construct multigrid
     m_multi_pol.resize(p.stages);
     for( unsigned u=0; u<p.stages; u++)
@@ -143,27 +142,27 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     if(  number[0] == m_multigrid.max_iter())
 		//// This gives an accuracy not reached fail
         throw dg::Fail( m_eps_pol);
-    
+
 	/////////////////////////update energetics/////////////////////
     for( unsigned i=0; i<2; i++)
 	/// Calculate the Laplacian of y and place it in m_lapy
         ///              M         * x   = y
 	dg::blas2::symv( m_laplaceM, y[i], m_lapy[i]);
 
-		////  M = M * a
-     dg::blas1::scal( m_lapy, -1.);
-    
+	////  M = M * a
+  dg::blas1::scal( m_lapy, -1.);
+
 	//mass inveriant
-	
+
 	/// Total mass: Integrate n in the V    Vol       n
     m_invariant[0]      =  dg::blas1::dot( m_vol2d, y[0] );
 	/// Diffusion of the total mass
     m_invariant_diss[0] = m_nu*dg::blas1::dot( m_vol2d, m_lapy[0]);
-    
+
 	//energy terms
 	/// Total entropy
     m_invariant[1] = 0.5*dg::blas2::dot( y[0], m_vol2d, y[0]);
-	
+
 	//// Calculate Temperature, I believe
     m_arakawa.variation( m_phi, m_temp);
 	/// Total Kinetic energy, associated with the thermal energy
@@ -183,9 +182,9 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 		///Average///
 	    if(m_modified){
             	m_average( m_phi, m_phi_perturbation);
-                m_average(  y[0], m_n_perturbation);
-                dg::blas1::axpby( 1., m_phi, -1., m_phi_perturbation);
-                dg::blas1::axpby( 1.,  y[0], -1., m_n_perturbation);
+              m_average(  y[0], m_n_perturbation);
+              dg::blas1::axpby( 1., m_phi, -1., m_phi_perturbation);
+              dg::blas1::axpby( 1.,  y[0], -1., m_n_perturbation);
         }
         else
         {

@@ -49,18 +49,18 @@ int main( int argc, char* argv[])
     dg::Karniadakis< std::array<dg::DVec,2> > karniadakis( y0, y0[0].size(), p.eps_time);
     karniadakis.init( exp, imp, time, y0, p.dt);
     /////////////////////////////set up netcdf/////////////////////////////////////
-    file::NC_Error_Handle err;
+    dg::file::NC_Error_Handle err;
     int ncid;
     err = nc_create( argv[2],NC_NETCDF4|NC_CLOBBER, &ncid);
     std::string input = js.toStyledString();
     err = nc_put_att_text( ncid, NC_GLOBAL, "inputfile", input.size(), input.data());
     int dim_ids[3], tvarID;
-    
-    err = file::define_dimensions( ncid, dim_ids, &tvarID, grid_out);
-    
+
+    err = dg::file::define_dimensions( ncid, dim_ids, &tvarID, grid_out);
+
     //Time ids
     int EtimeID, EtimevarID;
-    err = file::define_time( ncid, "energy_time", &EtimeID, &EtimevarID);
+    err = dg::file::define_time( ncid, "energy_time", &EtimeID, &EtimevarID);
 
     //energy IDs
     std::array<int,4> invariantID, dissID;
@@ -112,8 +112,8 @@ int main( int argc, char* argv[])
     dg::blas2::symv( interpolate, y0[1],           transferD[3]);
 
     for( int k=0;k<4; k++)
-    {   
-        dg::blas1::transfer( transferD[k], transferH);
+    {
+        dg::assign( transferD[k], transferH);
         err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
     }
     err = nc_put_vara_double( ncid, tvarID, start, count, &time);
@@ -129,17 +129,20 @@ int main( int argc, char* argv[])
             err = nc_def_var( ncid, names_1P[i].data(),  NC_DOUBLE, 1,  &EtimeID, &dataIDs_1P[i]);
         }
 
-        dg::blas1::transfer( y0[0], transferH_1P);
+        //////////////first output ////////////
+
+        // std::cout << 0 <<std::endl;
+        dg::assign( y0[0], transferH_1P);
         err = nc_put_vara_double( ncid, dataIDs[0], start_CP, count_CP, transferH.data() + middle);
         // std::cout << 1 <<std::endl;
         err = nc_put_vara_double( ncid, dataIDs[1], start_CP, count_CP, transferH.data() + middle);
-        
+
         // std::cout << 2 <<std::endl;
-        dg::blas1::transfer( exp.potential(), transferH_1P);
+        dg::assign( exp.potential(), transferH_1P);
         err = nc_put_vara_double( ncid, dataIDs[2], start_CP, count_CP, transferH.data() + middle);
 
         // std::cout << 3  <<std::endl;
-        dg::blas1::transfer( y0[1], transferH_1P);
+        dg::assign( y0[1], transferH_1P);
         err = nc_put_vara_double( ncid, dataIDs[3], start_CP, count_CP, transferH.data() + middle);
 
         err = nc_close(ncid);
@@ -166,7 +169,6 @@ int main( int argc, char* argv[])
 
         for( unsigned j=0; j<p.itstp; j++)
         {
-
             karniadakis.step( exp, imp, time, y0);
             //store accuracy details
             {
@@ -183,19 +185,22 @@ int main( int argc, char* argv[])
             // start[0] +=1;
             if (p.save_CP){start_CP[0] += 1;}
             {
-                std::cout << 0 <<std::endl;   
+                std::cout << 0 <<std::endl;
                 err = nc_open(argv[2], NC_WRITE, &ncid);
 
                 if (p.save_CP)
                 {
-                    dg::blas1::transfer( y0[0], transferH_1P);
+                    dg::assign( y0[0], transferH_1P);
                     err = nc_put_vara_double( ncid, dataIDs[0], start_CP, count_CP, transferH.data() + middle);
+                    // std::cout << 1 <<std::endl;
                     err = nc_put_vara_double( ncid, dataIDs[1], start_CP, count_CP, transferH.data() + middle);
-                    
-                    dg::blas1::transfer( exp.potential(), transferH_1P);
+
+                    // std::cout << 2 <<std::endl;
+                    dg::assign( exp.potential(), transferH_1P);
                     err = nc_put_vara_double( ncid, dataIDs[2], start_CP, count_CP, transferH.data() + middle);
 
-                    dg::blas1::transfer( y0[1], transferH_1P);
+                    // std::cout << 3  <<std::endl;
+                    dg::assign( y0[1], transferH_1P);
                     err = nc_put_vara_double( ncid, dataIDs[3], start_CP, count_CP, transferH.data() + middle);
                     }
 
@@ -203,7 +208,11 @@ int main( int argc, char* argv[])
                 for( int i=0; i<4; i++)
                 {
                     err = nc_put_vara_double( ncid, invariantID[i], Estart, Ecount, &exp.invariants()[i]);
-                    err = nc_put_vara_double( ncid, dissID[i], Estart, Ecount, &exp.invariants_diffusion()[i]);                 
+                    err = nc_put_vara_double( ncid, dissID[i], Estart, Ecount, &exp.invariants_diffusion()[i]);
+                    // if (p.save_CP){
+                    //     dg::assign( transferD_1P[i], transferH_1P);
+                    //     err = nc_put_vara_double( ncid, dataIDs_1P[0], start_CP, count_CP, transferH_1P.data() + middle);
+                    // }
                 }
 
                 err = nc_close(ncid);
@@ -218,7 +227,7 @@ int main( int argc, char* argv[])
         err = nc_open(argv[2], NC_WRITE, &ncid);
         for( int k=0;k<4; k++)
         {
-            dg::blas1::transfer( transferD[k], transferH);
+            dg::assign( transferD[k], transferH);
             err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
         }
         err = nc_put_vara_double( ncid, tvarID, start, count, &time);
@@ -245,5 +254,4 @@ int main( int argc, char* argv[])
     std::cout <<"which is         \t"<<t.diff()/p.itstp/p.maxout<<"s/step\n";
 
     return 0;
-
 }
