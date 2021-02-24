@@ -164,7 +164,7 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     m_invariant[1] = 0.5*dg::blas2::dot( y[0], m_vol2d, y[0]);
 
 	//// Calculate Temperature, I believe
-    m_arakawa.variation( m_phi, m_temp);
+    m_laplaceM.variation( m_phi, m_temp);
 	/// Total Kinetic energy, associated with the thermal energy
 	/// the contribution is 1/2 for each degreed of freedom 1 ?? (3 ??), in this case
     m_invariant[2] = 0.5*dg::blas1::dot( m_vol2d, m_temp);
