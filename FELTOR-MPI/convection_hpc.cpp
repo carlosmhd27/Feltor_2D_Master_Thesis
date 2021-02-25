@@ -49,7 +49,6 @@ int main( int argc, char* argv[])
       int np[2];
       if(rank==0)
       {
-          // std::cin>> np[0] >> np[1];
           np[0] = atoi(argv[3]);
           np[1] = atoi(argv[4]);
           std::cout << "Computing with "<<np[0]<<" x "<<np[1]<<" = "<<size<<std::endl;
@@ -144,8 +143,6 @@ int main( int argc, char* argv[])
 
     DVec transfer (dg::evaluate(dg::zero, grid));
 
-    // size_t count[3] = {1, grid_out.n()*grid_out.Ny(), grid_out.n()*grid_out.Nx()};
-    // size_t start[3] = {0, 0, 0}; // grid_out.n()*grid_out.Nx()
     size_t start = 0, count = 1;
     int dataIDs[4];
     std::string names[4] = {"electrons", "ions", "potential", "vorticity"};
@@ -166,7 +163,6 @@ int main( int argc, char* argv[])
     for( int k=0;k<4; k++)
     {
         dg::assign( transferD[k], transferH);
-        //MPI_OUT err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
         dg::file::put_vara_double( ncid, dataIDs[k], start, grid_out, transferH);
     }
     MPI_OUT err = nc_put_vara_double( ncid, tvarID, &start, &count, &time);
@@ -206,7 +202,6 @@ int main( int argc, char* argv[])
             }
 
             Estart[0] += 1;
-            // start[0] +=1;
             {
                 MPI_OUT std::cout << 0 <<std::endl;
                 MPI_OUT err = nc_open(argv[2], NC_WRITE, &ncid);
@@ -221,22 +216,20 @@ int main( int argc, char* argv[])
                 MPI_OUT err = nc_close(ncid);
             }
         }
-        //////////////////////////write fields////////////////////////
-        // start[0] = i;
+        //////////////////////////write fields/////////////////////////
         start = i;
         dg::blas2::symv( interpolate, y0[0], transferD[0]);
         dg::blas2::symv( interpolate, y0[0], transferD[1]);
         dg::blas2::symv( interpolate, exp.potential(), transferD[2]);
         dg::blas2::symv( interpolate, y0[1], transferD[3]);
-       MPI_OUT err = nc_open(argv[2], NC_WRITE, &ncid);
+        MPI_OUT err = nc_open(argv[2], NC_WRITE, &ncid);
         for( int k=0;k<4; k++)
         {
             dg::assign( transferD[k], transferH);
             dg::file::put_vara_double( ncid, dataIDs[k], start, grid_out, transferH);
-            // err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
         }
-       MPI_OUT err = nc_put_vara_double( ncid, tvarID, &start, &count, &time);
-       MPI_OUT err = nc_close(ncid);
+        MPI_OUT err = nc_put_vara_double( ncid, tvarID, &start, &count, &time);
+        MPI_OUT err = nc_close(ncid);
 
 #ifdef DG_BENCHMARK
         ti.toc();
