@@ -80,14 +80,14 @@ int main( int argc, char* argv[])
 
     ////////////////////////////////set up computations///////////////////////////
     Grid2d grid( 0, p.lx, 0, p.ly, p.n, p.Nx, p.Ny, p.bc_x, p.bc_y
-                #ifdef TOEFL_MPI
+                #ifdef FELTOR_MPI
                 , comm
-                #endif //TOEFL_MPI
+                #endif //FELTOR_MPI
     );
     Grid2d grid_out( 0, p.lx, 0, p.ly, p.n_out, p.Nx_out, p.Ny_out, p.bc_x, p.bc_y
-                    #ifdef TOEFL_MPI
+                    #ifdef FELTOR_MPI
                     , comm
-                    #endif //TOEFL_MPI
+                    #endif //FELTOR_MPI
     );
     //create RHS
   	//exp is the explicit part and imp the implicit. Both defined as
@@ -142,8 +142,9 @@ int main( int argc, char* argv[])
 
     DVec transfer (dg::evaluate(dg::zero, grid));
 
-    size_t count[3] = {1, grid_out.n()*grid_out.Ny(), grid_out.n()*grid_out.Nx()};
-    size_t start[3] = {0, 0, 0}; // grid_out.n()*grid_out.Nx()
+    // size_t count[3] = {1, grid_out.n()*grid_out.Ny(), grid_out.n()*grid_out.Nx()};
+    // size_t start[3] = {0, 0, 0}; // grid_out.n()*grid_out.Nx()
+    size_t start = 0, count = 1;
     int dataIDs[4];
     std::string names[4] = {"electrons", "ions", "potential", "vorticity"};
     IDMatrix interpolate = dg::create::interpolation( grid_out, grid);
@@ -219,7 +220,8 @@ int main( int argc, char* argv[])
             }
         }
         //////////////////////////write fields////////////////////////
-        start[0] = i;
+        // start[0] = i;
+        start = i;
         dg::blas2::symv( interpolate, y0[0], transferD[0]);
         dg::blas2::symv( interpolate, y0[0], transferD[1]);
         dg::blas2::symv( interpolate, exp.potential(), transferD[2]);
