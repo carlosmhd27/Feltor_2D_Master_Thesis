@@ -4,7 +4,7 @@
 // #include <stdio.h>
 
 #include "dg/algorithm.h"
-#include "parameters_Mix.h"
+#include "parameters.h"
 
 namespace convection
 {

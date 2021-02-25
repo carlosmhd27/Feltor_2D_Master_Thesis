@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include "dg/algorithm.h"
-// #include "json/json.h"
-#include <jsoncpp/json/json.h>
+#include "json/json.h" // Marconi
+// #include <jsoncpp/json/json.h> // New json
 
 namespace convection{
 
