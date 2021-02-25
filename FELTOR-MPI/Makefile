@@ -15,7 +15,7 @@ convection: convection.cpp convection.h
 convection_hpc: convection_hpc.cpp convection.h
 	$(CC) $(OPT) $(CFLAGS) $< -o $@ $(INCLUDE) $(LIBS) $(JSONLIB) -DDG_BENCHMARK  -g
 
-convection_mpi: convection_mpi.cpp convection.h
+convection_mpi: convection_hpc.cpp convection.h
 	$(MPICC) $(OPT) $(MPICFLAGS) $< -o $@ $(INCLUDE) $(LIBS) $(JSONLIB) -DFELTOR_MPI -DDG_BENCHMARK -g
 
 .PHONY: clean
