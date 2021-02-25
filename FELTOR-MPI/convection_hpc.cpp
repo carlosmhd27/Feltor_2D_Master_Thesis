@@ -49,7 +49,9 @@ int main( int argc, char* argv[])
       int np[2];
       if(rank==0)
       {
-          std::cin>> np[0] >> np[1];
+          // std::cin>> np[0] >> np[1];
+          np[0] = atoi(argv[3]);
+          np[1] = atoi(argv[4]);
           std::cout << "Computing with "<<np[0]<<" x "<<np[1]<<" = "<<size<<std::endl;
           assert( size == np[0]*np[1]);
       }
@@ -63,7 +65,7 @@ int main( int argc, char* argv[])
     Json::CharReaderBuilder parser;
     parser["collectComments"] = false;
     std::string errs;
-    if( argc != 3)
+    if( argc != 5)
     {
         MPI_OUT std::cerr << "ERROR: Wrong number of arguments!\nUsage: "<< argv[0]<<" [inputfile] [outputfile]\n";
         return -1;
@@ -167,7 +169,7 @@ int main( int argc, char* argv[])
         //MPI_OUT err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
         dg::file::put_vara_double( ncid, dataIDs[k], start, grid_out, transferH);
     }
-    MPI_OUT err = nc_put_vara_double( ncid, tvarID, start, count, &time);
+    MPI_OUT err = nc_put_vara_double( ncid, tvarID, &start, &count, &time);
     MPI_OUT std::cout << "Exiting the fields" << std::endl;
 
     ///////////////////////////////////////Timeloop/////////////////////////////////
@@ -233,7 +235,7 @@ int main( int argc, char* argv[])
             dg::file::put_vara_double( ncid, dataIDs[k], start, grid_out, transferH);
             // err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
         }
-       MPI_OUT err = nc_put_vara_double( ncid, tvarID, start, count, &time);
+       MPI_OUT err = nc_put_vara_double( ncid, tvarID, &start, &count, &time);
        MPI_OUT err = nc_close(ncid);
 
 #ifdef DG_BENCHMARK
