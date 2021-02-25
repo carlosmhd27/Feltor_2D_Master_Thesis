@@ -72,7 +72,7 @@ struct ExplicitPart
     }
 
   private:
-    const std::string  m_model;
+
     bool  m_model;
     const bool m_modified;
     const double m_eps_pol;
