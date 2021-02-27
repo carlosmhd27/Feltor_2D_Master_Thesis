@@ -4,7 +4,7 @@ from os.path     import join, exists, isdir
 from os          import remove
 from sys         import argv
 from time        import time
-from numpy       import arange
+from numpy       import arange, floor, remainder
 
 from matplotlib.pyplot    import clf, show, subplots
 from matplotlib.animation import writers, FuncAnimation, PillowWriter
@@ -33,7 +33,7 @@ else:
 
 
 for model in models:
-    
+
     GIF_name = join(dir_name, f'video_{model + extra}.gif')
     if exists(GIF_name):
         overwrite = input("The GIF file already exists, do you wanna overwrite it?([Y]/n)\n")
@@ -41,7 +41,7 @@ for model in models:
             GIF_name = input('Please, give a new name')
             if GIF_name == '':
                 continue
-            
+
 
     info_file = join(dir_name, f"info_{model + extra}.txt")
     if exists(info_file):
@@ -58,7 +58,7 @@ for model in models:
         with open(info_file, 'a') as information:
             information.write(f'{File_name} does not exist.')
         continue
-        
+
     ## We analysis the file and obtain the values we wanna measure
     Analytics = Analyzed(File_name)
 
@@ -79,7 +79,7 @@ for model in models:
     Writer = writers['ffmpeg']
     writer = Writer(fps=fps, metadata=dict(artist='Me'), bitrate = 600)
 
-    ## We define the animation class and we save the animation, or show it 
+    ## We define the animation class and we save the animation, or show it
     ani = FuncAnimation(fig, animate_, np.arange(0, len(Analytics.ions), i),
                                   fargs = (Analytics, ax),
                                   init_func=init_, interval = 100) ## np.arange(1, len(Analytics.ions))
@@ -90,9 +90,9 @@ for model in models:
 
     stop   = time()
     needed = stop - start
-    nd_hr  = needed // 3600
-    nd_mn  = (needed / 3600 - nd_hr) * 60
+    nd_hr  = floor(needed / 3600)
+    nd_mn  = remainder(needed, 3600) * 60
     with open(info_file, 'a') as information:
         information.write('After {} h and {:.1f} min, I am done with model: {}'.format(nd_hr, nd_mn, model + extra) + 2 * "\n")
-    
+
 print('Done')
