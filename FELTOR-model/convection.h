@@ -71,7 +71,7 @@ struct ExplicitPart
 
   private:
     const std::string  m_model;
-    bool m_modified;
+    const bool m_modified;
     const double m_eps_pol;
     const double m_kappa, m_nu, m_alpha;
     double m_g;
@@ -89,7 +89,7 @@ struct ExplicitPart
     std::vector<dg::Elliptic<Geometry, Matrix, container> > m_multi_pol;
     dg::Extrapolation<container> m_old_phi;
 
-	dg::Average<container> m_average;
+    dg::Average<container> m_average;
 
     std::array<double,4> m_invariant, m_invariant_diss;
 };

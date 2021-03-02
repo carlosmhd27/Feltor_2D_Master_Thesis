@@ -85,13 +85,6 @@ int main( int argc, char* argv[])
     }
 
     dg::DVec transfer (dg::evaluate(dg::zero, grid));
-    std::vector<dg::DVec> transferD_1P(4, dg::evaluate( dg::zero, grid));
-    dg::HVec transferH_1P( dg::evaluate( dg::zero, grid));
-    size_t count_CP[] = {1};
-    size_t start_CP[] = {0}; // grid_out.n()*grid_out.Nx()
-    const unsigned middle = p.Ny * p.Nx / 2 + p.Nx / 2;
-    int dataIDs_1P[4];
-    std::string names_1P[4] = {"electrons_center", "ions_center", "potential_center", "vorticity_center"};
 
     size_t count[3] = {1, grid_out.n()*grid_out.Ny(), grid_out.n()*grid_out.Nx()};
     size_t start[3] = {0, 0, 0}; // grid_out.n()*grid_out.Nx()
@@ -118,35 +111,6 @@ int main( int argc, char* argv[])
     }
     err = nc_put_vara_double( ncid, tvarID, start, count, &time);
     std::cout << "Exiting the fields" << std::endl;
-
-
-    //Fields center point
-
-    if (p.save_CP){
-        //Fields center point
-
-        for( unsigned i=0; i<4; i++){
-            err = nc_def_var( ncid, names_1P[i].data(),  NC_DOUBLE, 1,  &EtimeID, &dataIDs_1P[i]);
-        }
-
-        //////////////first output ////////////
-
-        // std::cout << 0 <<std::endl;
-        dg::assign( y0[0], transferH_1P);
-        err = nc_put_vara_double( ncid, dataIDs[0], start_CP, count_CP, transferH.data() + middle);
-        // std::cout << 1 <<std::endl;
-        err = nc_put_vara_double( ncid, dataIDs[1], start_CP, count_CP, transferH.data() + middle);
-
-        // std::cout << 2 <<std::endl;
-        dg::assign( exp.potential(), transferH_1P);
-        err = nc_put_vara_double( ncid, dataIDs[2], start_CP, count_CP, transferH.data() + middle);
-
-        // std::cout << 3  <<std::endl;
-        dg::assign( y0[1], transferH_1P);
-        err = nc_put_vara_double( ncid, dataIDs[3], start_CP, count_CP, transferH.data() + middle);
-
-        err = nc_close(ncid);
-    }
 
     ///////////////////////////////////////Timeloop/////////////////////////////////
     const double mass0 = exp.invariants()[0], mass_blob0 = mass0 - grid.lx()*grid.ly();
@@ -183,36 +147,15 @@ int main( int argc, char* argv[])
 
             Estart[0] += 1;
             // start[0] +=1;
-            if (p.save_CP){start_CP[0] += 1;}
             {
                 std::cout << 0 <<std::endl;
                 err = nc_open(argv[2], NC_WRITE, &ncid);
-
-                if (p.save_CP)
-                {
-                    dg::assign( y0[0], transferH_1P);
-                    err = nc_put_vara_double( ncid, dataIDs[0], start_CP, count_CP, transferH.data() + middle);
-                    // std::cout << 1 <<std::endl;
-                    err = nc_put_vara_double( ncid, dataIDs[1], start_CP, count_CP, transferH.data() + middle);
-
-                    // std::cout << 2 <<std::endl;
-                    dg::assign( exp.potential(), transferH_1P);
-                    err = nc_put_vara_double( ncid, dataIDs[2], start_CP, count_CP, transferH.data() + middle);
-
-                    // std::cout << 3  <<std::endl;
-                    dg::assign( y0[1], transferH_1P);
-                    err = nc_put_vara_double( ncid, dataIDs[3], start_CP, count_CP, transferH.data() + middle);
-                    }
 
                 err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
                 for( int i=0; i<4; i++)
                 {
                     err = nc_put_vara_double( ncid, invariantID[i], Estart, Ecount, &exp.invariants()[i]);
                     err = nc_put_vara_double( ncid, dissID[i], Estart, Ecount, &exp.invariants_diffusion()[i]);
-                    // if (p.save_CP){
-                    //     dg::assign( transferD_1P[i], transferH_1P);
-                    //     err = nc_put_vara_double( ncid, dataIDs_1P[0], start_CP, count_CP, transferH_1P.data() + middle);
-                    // }
                 }
 
                 err = nc_close(ncid);
