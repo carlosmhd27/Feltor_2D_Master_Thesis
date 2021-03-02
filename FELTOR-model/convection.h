@@ -135,7 +135,7 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 	/// This is used to get the number of iterations needed to obtain
 	/// the desired accuracy, the operation used for this is   operation (phi) = omega * weights
 	/// where weights must be in the grid
-    std::vector<unsigned> number = m_multigrid.direct_solve( m_multi_pol, m_phi, y[1], m_eps_pol);
+    std::vector<unsigned> number = m_multigrid.direct_solve( m_multi_pol, m_phi, y[1], {m_eps_pol, 10*m_eps_pol, 10*m_eps_pol});
 
 	/// insert phi for the next extrapolationi
     m_old_phi.update( m_phi);
@@ -150,7 +150,7 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 	dg::blas2::symv( m_laplaceM, y[i], m_lapy[i]);
 
 	////  M = M * a
-  dg::blas1::scal( m_lapy, -1.);
+    dg::blas1::scal( m_lapy, -1.);
 
 	//mass inveriant
 
@@ -181,10 +181,10 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 	if (m_model == "HW") {
 		///Average///
 	    if(m_modified){
-            	m_average( m_phi, m_phi_perturbation);
-              m_average(  y[0], m_n_perturbation);
-              dg::blas1::axpby( 1., m_phi, -1., m_phi_perturbation);
-              dg::blas1::axpby( 1.,  y[0], -1., m_n_perturbation);
+            m_average( m_phi, m_phi_perturbation);
+            m_average(  y[0], m_n_perturbation);
+            dg::blas1::axpby( 1., m_phi, -1., m_phi_perturbation);
+            dg::blas1::axpby( 1.,  y[0], -1., m_n_perturbation);
         }
         else
         {

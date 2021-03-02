@@ -72,7 +72,6 @@ struct ExplicitPart
     }
 
   private:
-
     bool  m_model;
     const bool m_modified;
     const double m_eps_pol;
@@ -158,7 +157,7 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 	/// This is used to get the number of iterations needed to obtain
 	/// the desired accuracy, the operation used for this is   operation (phi) = omega * weights
 	/// where weights must be in the grid
-    std::vector<unsigned> number = m_multigrid.direct_solve( m_multi_pol, m_phi, y[1], m_eps_pol);
+    std::vector<unsigned> number = m_multigrid.direct_solve( m_multi_pol, m_phi, y[1], {m_eps_pol, 10*m_eps_pol, 10*m_eps_pol});
 
 	/// insert phi for the next extrapolation
     m_old_phi.update( m_phi);
@@ -187,7 +186,7 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     m_invariant[1] = 0.5*dg::blas2::dot( y[0], m_vol2d, y[0]);
 
 	//// Calculate Temperature, I believe
-    m_arakawa.variation( m_phi, m_temp);
+    m_laplaceM.variation( m_phi, m_temp);
 	/// Total Kinetic energy, associated with the thermal energy
 	/// the contribution is 1/2 for each degreed of freedom 1 ?? (3 ??), in this case
     m_invariant[2] = 0.5*dg::blas1::dot( m_vol2d, m_temp);
