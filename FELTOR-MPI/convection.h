@@ -75,12 +75,12 @@ struct ExplicitPart
     const bool m_modified;
     const double m_eps_pol;
     const double m_nu, m_kappa_var;
-    double m_g;
+    const double m_g;
     container m_alpha, m_kappa;
     const container m_x, m_vol2d;
 
     container m_phi, m_temp, m_phi_perturbation, m_n_perturbation;
-    container m_dy_y0;
+    container m_dy_y0, m_dy_phi;
     std::array<container,2> m_lapy;
 
     //matrices and solvers
@@ -105,7 +105,7 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     m_kappa(dg::evaluate(dg::one, grid)),
     m_x( dg::evaluate( dg::cooX2d, grid)), m_vol2d( dg::create::volume(grid)),
     m_phi( evaluate( dg::zero, grid)), m_temp(m_phi), m_phi_perturbation(m_phi),
-    m_n_perturbation(m_phi), m_dy_y0(m_phi),
+    m_n_perturbation(m_phi), m_dy_y0(m_phi), m_dy_phi(m_phi),
     m_lapy({ m_phi, m_phi}),
     m_dy( dg::create::dy(grid)),
     m_arakawa( grid),
@@ -114,7 +114,7 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     m_old_phi( 2, m_phi),
     m_average(grid, dg::coo2d::y)
     {
-    m_g += -p.kappa;
+    // m_g += -p.kappa;
     //construct multigrid
     m_multi_pol.resize(p.stages);
     for( unsigned u=0; u<p.stages; u++)
@@ -225,8 +225,10 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 	/// phi is negative, that's why both have same sign
   /// IMPORTANT: kappa is not a salar anymore
 	///              -m_kappa * M   *   x + a * y
-    dg::blas2::gemv(      m_g, m_dy, m_phi, 1., yp[0]);
+    dg::blas2::gemv(m_dy, y[0], m_dy_phi);
     dg::blas2::gemv(m_dy, y[0], m_dy_y0);
+    dg::blas1::axpby(m_g, m_dy_phi, 1., yp[0]);
+    dg::blas1::pointwiseDot( -1., m_kappa, m_dy_phi, 1., yp[0]);
     dg::blas1::pointwiseDot( -1., m_kappa, m_dy_y0, 1., yp[1]);
     return;
 }
