@@ -81,13 +81,15 @@ struct ExplicitPart
     const container m_x, m_vol2d;
 
     container m_phi, m_temp, m_phi_perturbation, m_n_perturbation;
-    container m_dy_n, m_dy_phi;
+    container m_dn_dy;
     container m_exp_phi;
+    container m_vx, m_vy;
     std::array<container,2> m_lapy;
 
     //matrices and solvers
-    Matrix m_dy;
-    dg::ArakawaX<Geometry, Matrix, container> m_arakawa;
+    Matrix m_dy_n, m_dy_phi;
+    Matrix         m_dx_phi;
+    dg::Advection <Geometry, Matrix, container> m_advection_n, m_advection_omega;
     dg::Elliptic<Geometry, Matrix, container> m_laplaceM; //contains negative laplacian
 
     dg::MultigridCG2d<Geometry, Matrix, container> m_multigrid;
@@ -95,8 +97,8 @@ struct ExplicitPart
     dg::Extrapolation<container> m_old_phi;
 
     dg::Average<container> m_average;
-    // dg::ExpProfX m_expprof;
-
+    const container S_domain;
+    container Source;
     std::array<double,4> m_invariant, m_invariant_diss;
 };
 
@@ -110,14 +112,20 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     m_lambda(m_alpha), m_lmbd_phi(m_alpha), m_nb(m_alpha),
     m_x( dg::evaluate( dg::cooX2d, grid)), m_vol2d( dg::create::volume(grid)),
     m_phi( evaluate( dg::zero, grid)), m_temp(m_phi), m_phi_perturbation(m_phi),
-    m_n_perturbation(m_phi), m_dy_n(m_phi), m_dy_phi(m_phi), m_exp_phi(m_phi),
+    m_n_perturbation(m_phi), m_dn_dy(m_phi), m_exp_phi(m_phi),
+    m_vx(m_phi), m_vy(m_phi),
     m_lapy({ m_phi, m_phi}),
-    m_dy( dg::create::dy(grid)),
-    m_arakawa( grid),
+    m_dy_n( dg::create::dy(grid,   p.bc_y_n)),
+    m_dy_phi( dg::create::dy(grid, p.bc_y_phi, dg::centered)),
+    m_dx_phi( dg::create::dy(grid, p.bc_x_phi, dg::centered)),
+    m_advection_n(     grid, p.bc_x_n,    p.bc_y_n),
+    m_advection_omega( grid, p.bc_x_omega, p.bc_y_omega),
     m_laplaceM( grid, dg::normed, dg::centered),
     m_multigrid( grid, p.stages),
     m_old_phi( 2, m_phi),
-    m_average(grid, dg::coo2d::y) //, m_expprof(dg::ExpProfX(1., 0., -1.))
+    m_average(grid, dg::coo2d::y),
+    S_domain(dg::evaluate(dg::TanhProfX(p.x_a, 0.001, -1., 0., 1.), grid)),
+    Source(S_domain)
     {
     // m_g += -p.kappa;
     //construct multigrid
@@ -168,6 +176,11 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 
 	/// insert phi for the next extrapolation
     m_old_phi.update( m_phi);
+
+    // v_x  = -dy phi (phi is defined negative)
+    dg::blas2::symv( 1., m_dy_phi, m_phi, 0., m_vx);
+    // v_y = dx phi (phi is defined negative)
+    dg::blas2::symv(-1., m_dx_phi, m_phi, 0., m_vy);
 
     // Create the Exponential
     dg::blas1::axpby(1., m_lambda, 1., m_phi, m_lmbd_phi);
@@ -225,34 +238,33 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
             dg::blas1::copy( y[0], m_n_perturbation);
         }
         ///Perturbation terms///
+        m_advection_n.upwind(     -1., m_vx, m_vy, y[0], 0., yp[0]);
+        m_advection_omega.upwind( -1., m_vx, m_vy, y[1], 0., yp[1]);
         for (unsigned i=0; i<2;i++) {
-            //We compute the Poisson brackets
-            m_arakawa( m_phi, y[i], yp[i]);
             dg::blas1::pointwiseDot ( -1., m_alpha,   m_n_perturbation, 1., yp[i]);
             dg::blas1::pointwiseDot ( -1., m_alpha, m_phi_perturbation, 1., yp[i]);
     }}
 	else {
-    	for( unsigned i=0; i<2; i++)
-			///// [m_phi, y] = yp We compute the Poisson brackets
-    	    m_arakawa( m_phi,y[i], yp[i]); //m_phi is negative!
+            ///// [m_phi, y] = yp We compute the Poisson brackets
+        m_advection_n.upwind(     -1., m_vx, m_vy, y[0], 0., yp[0]);
+        m_advection_omega.upwind( -1., m_vx, m_vy, y[1], 0., yp[1]);
 	}
     /// Kappa * d / dy, the term of the y derivative,
 	/// phi is negative, that's why both have same sign
   /// IMPORTANT: kappa is not a salar anymore
 	///              -m_kappa * M   *   x + a * y
-    dg::blas2::gemv(m_dy, m_phi, m_dy_phi); // phi derivative
-    dg::blas2::gemv(m_dy, y[0], m_dy_n);   // n derivative
-    dg::blas1::axpby(-m_g, m_dy_n, 1., yp[0]);
-                               // -g *  n  *  d_y phi
-    dg::blas1::pointwiseDot(    -m_g,  y[0], m_dy_phi, 1., yp[0]);
+    dg::blas2::gemv(m_dy_n, y[0], m_dn_dy);   // n derivative
+    dg::blas1::axpby(-m_g, m_dn_dy, 1., yp[0]);
+                               // -g *  n  *  d_y phi (V_x)
+    dg::blas1::pointwiseDot(    -m_g,  y[0], m_vx, 1., yp[0]);
                               // g   d_y n  /  n
-    dg::blas1::pointwiseDivide( -m_g, m_dy_n, y[0], 1., yp[1]);
+    dg::blas1::pointwiseDivide( -m_g, m_dn_dy, y[0], 1., yp[1]);
     // Exponentials
     dg::blas1::axpby(-1, m_exp_phi, 1., yp[0]);
     dg::blas1::axpbypgz(1, m_sigma, -1, m_exp_phi, 1., yp[1]);
     // Source
-    dg::blas1::axpbypgz(m_fau, y[0], -1., m_nb, 1., yp[0]);
-
+    dg::blas1::axpbypgz(m_fau, y[0], -1., m_nb, 0., Source);
+    dg::blas1::pointwiseDot(1., S_domain, Source, 1., yp[0]);
 
     return;
 }

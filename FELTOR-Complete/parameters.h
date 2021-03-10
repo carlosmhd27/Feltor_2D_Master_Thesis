@@ -13,7 +13,7 @@ struct Parameters
 {
 	std::string model;
 	bool modified;
-	double tanh_width, x_b;
+	double tanh_width, x_a, x_b;
 	unsigned n, Nx, Ny;
 	double dt;
 	unsigned n_out, Nx_out, Ny_out;
@@ -37,6 +37,7 @@ struct Parameters
 	model    = js["model"].asString();
 	modified = js["modified"].asBool();
 	tanh_width = js["tanh_width"].asDouble();
+	x_a        = js["x_a"].asDouble();
 	x_b        = js["x_b"].asDouble();
 
 	n       = js["n"].asUInt();
@@ -78,7 +79,8 @@ struct Parameters
     {   os << "The model we are using is " <<model<<"\n"
 			<< "Use the modified HW model: " << modified<<"\n";
 
-		os << "The tanh profile for a possible Mix model has \n"
+		os << "Position of the boundaries between models \n"
+			<< " x_a:  = " << x_a << "\n"
 			<< " x_b:  = " << x_b << "\n"
 			<< "width: = " << tanh_width << "\n";
 
