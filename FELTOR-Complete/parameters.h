@@ -22,13 +22,15 @@ struct Parameters
 	unsigned stages;
 
 	double eps_pol, eps_time;
-	double kappa, g, alpha, sgm, lambda, nu;
-	double tau, nb;
+	double kappa, g, alpha, sgm, nu;
+	double tau, nb, lambda;
 
 	double amp, sigma, posX, posY;
 
 	double lx, ly;
-	dg::bc bc_x, bc_y;
+	dg::bc bc_x_n, bc_y_n;
+	dg::bc bc_x_omega, bc_y_omega;
+	dg::bc bc_x_phi, bc_y_phi;
 
 
 	Parameters( const Json::Value& js) {
@@ -64,8 +66,12 @@ struct Parameters
 	posY        = js["posY"].asDouble();
 	lx          = js["lx"].asDouble();
 	ly          = js["ly"].asDouble();
-	bc_x        = dg::str2bc(js["bc_x"].asString());
-	bc_y        = dg::str2bc(js["bc_y"].asString());
+	bc_x_n      = dg::str2bc(js["bc_x_n"].asString());
+	bc_y_n      = dg::str2bc(js["bc_y_n"].asString());
+	bc_x_omega  = dg::str2bc(js["bc_x_omega"].asString());
+	bc_y_omega  = dg::str2bc(js["bc_y_omega"].asString());
+	bc_x_phi    = dg::str2bc(js["bc_x_phi"].asString());
+	bc_y_phi    = dg::str2bc(js["bc_y_phi"].asString());
 	}
 
     void display( std::ostream& os = std::cout ) const
@@ -96,10 +102,15 @@ struct Parameters
             <<"    lx = "<<lx<<"\n"
             <<"    ly = "<<ly<<"\n";
 
+			 //Curious! dg:: is not needed due to ADL!
         os << "Boundary conditions in x are: \n"
-            <<"    "<<bc2str(bc_x)<<"\n";  //Curious! dg:: is not needed due to ADL!
+			<<"   n:  "<<bc2str(bc_x_n)<<"\n"
+			<<"omega: "<<bc2str(bc_x_omega)<<"\n"
+			<<"  phi: "<<bc2str(bc_x_phi)<<"\n";
         os << "Boundary conditions in y are: \n"
-            <<"    "<<bc2str(bc_y)<<"\n";
+			<<"   n:  "<<bc2str(bc_y_n)<<"\n"
+			<<"omega: "<<bc2str(bc_y_omega)<<"\n"
+			<<"  phi: "<<bc2str(bc_y_phi)<<"\n";
 
         os << "Algorithmic parameters are: \n"
             <<"    n  = "<<n<<"\n"

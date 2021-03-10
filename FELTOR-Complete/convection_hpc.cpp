@@ -80,12 +80,12 @@ int main( int argc, char* argv[])
 
 
     ////////////////////////////////set up computations///////////////////////////
-    Grid2d grid( 0, p.lx, 0, p.ly, p.n, p.Nx, p.Ny, p.bc_x, p.bc_y
+    Grid2d grid( 0, p.lx, 0, p.ly, p.n, p.Nx, p.Ny, p.bc_x_n, p.bc_y_n
                 #ifdef FELTOR_MPI
                 , comm
                 #endif //FELTOR_MPI
     );
-    Grid2d grid_out( 0, p.lx, 0, p.ly, p.n_out, p.Nx_out, p.Ny_out, p.bc_x, p.bc_y
+    Grid2d grid_out( 0, p.lx, 0, p.ly, p.n_out, p.Nx_out, p.Ny_out, p.bc_x_n, p.bc_y_n
                     #ifdef FELTOR_MPI
                     , comm
                     #endif //FELTOR_MPI
