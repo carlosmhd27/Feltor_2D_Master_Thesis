@@ -97,8 +97,8 @@ struct ExplicitPart
     dg::Extrapolation<container> m_old_phi;
 
     dg::Average<container> m_average;
-    const container S_domain;
-    container Source;
+    const container m_S_domain;
+    container m_Source;
     std::array<double,4> m_invariant, m_invariant_diss;
 };
 
@@ -124,8 +124,8 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     m_multigrid( grid, p.stages),
     m_old_phi( 2, m_phi),
     m_average(grid, dg::coo2d::y),
-    S_domain(dg::evaluate(dg::TanhProfX(p.x_a, 0.001, -1., 0., 1.), grid)),
-    Source(S_domain)
+    m_S_domain(dg::evaluate(dg::TanhProfX(p.x_a, 0.001, -1., 0., 1.), grid)),
+    m_Source(m_S_domain)
     {
     // m_g += -p.kappa;
     //construct multigrid
@@ -263,8 +263,8 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     dg::blas1::axpby(-1, m_exp_phi, 1., yp[0]);
     dg::blas1::axpbypgz(1, m_sigma, -1, m_exp_phi, 1., yp[1]);
     // Source
-    dg::blas1::axpbypgz(m_fau, y[0], -1., m_nb, 0., Source);
-    dg::blas1::pointwiseDot(1., S_domain, Source, 1., yp[0]);
+    dg::blas1::axpbypgz(m_fau, y[0], -1., m_nb, 0., m_Source);
+    dg::blas1::pointwiseDot(-1., m_S_domain, m_Source, 1., yp[0]);
 
     return;
 }
