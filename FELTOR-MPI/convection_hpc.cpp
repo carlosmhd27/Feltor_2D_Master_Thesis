@@ -57,6 +57,9 @@ int main( int argc, char* argv[])
       MPI_Bcast( np, 2, MPI_INT, 0, MPI_COMM_WORLD);
       MPI_Comm comm;
       MPI_Cart_create( MPI_COMM_WORLD, 2, np, periods, true, &comm);
+      int num_args(5);
+  #else
+      int num_args(3);
   #endif//FELTOR_MPI-
 
     //Parameter initialisation
@@ -64,9 +67,14 @@ int main( int argc, char* argv[])
     Json::CharReaderBuilder parser;
     parser["collectComments"] = false;
     std::string errs;
-    if( argc != 5)
+
+    if( argc != num_args)
     {
+        #ifdef FELTOR_MPI
+        MPI_OUT std::cerr << "ERROR: Wrong number of arguments!\nUsage: "<< argv[0]<<" [inputfile] [outputfile] [np0] [np1]\n";
+        #else
         MPI_OUT std::cerr << "ERROR: Wrong number of arguments!\nUsage: "<< argv[0]<<" [inputfile] [outputfile]\n";
+        #endif
         return -1;
     }
     else
