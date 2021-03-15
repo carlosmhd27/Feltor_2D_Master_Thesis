@@ -133,7 +133,7 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     for( unsigned u=0; u<p.stages; u++)
         m_multi_pol[u].construct( m_multigrid.grid(u), dg::not_normed, dg::centered);
 
-    if (p.model == "IC_HW"){
+    if (p.model == "IC_HW"){                               /// sign, B, A
       m_alpha = dg::evaluate(dg::TanhProfX(p.x_b, p.tanh_width,  1., 0., 1.), grid);
       m_sigma = dg::evaluate(dg::TanhProfX(p.x_b, p.tanh_width, -1., 0., 1.), grid);
     }
@@ -186,7 +186,7 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     dg::blas1::axpby(1., m_lambda, 1., m_phi, m_lmbd_phi);
     dg::blas1::transform( m_lmbd_phi, m_exp_phi, dg::EXP<double>());
     // m_exp_phi =  dg::evaluate(dg::ExpProfX(1., 0., -1.), m_lmbd_phi);
-    dg::blas1::pointwiseDivide(m_exp_phi, m_sigma, m_exp_phi);
+    dg::blas1::pointwiseDot(m_exp_phi, m_sigma, m_exp_phi);
 
 
 	/////////////////////////update energetics/////////////////////
