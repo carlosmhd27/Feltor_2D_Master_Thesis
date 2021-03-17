@@ -103,51 +103,100 @@ the curvature, $\nu$ diffusivity.
 
 \begin{subequations}
 \begin{align}
- \nabla^2 \phi =  \omega, \quad \\
- \frac{\partial n}{\partial t}     =
+ \nabla^2 \phi & =  \omega, \quad \\
+ \frac{\partial n}{\partial t}    & =
     \{ n, \phi\}
-  + \kappa \frac{\partial \phi}{\partial y}
-  + \nu \nabla^2 n  \\
-  \frac{\partial \omega}{\partial t} =
+  + (\kappa - g) \frac{\partial \phi}{\partial y}
+  + \nu \nabla^2 n  \\  
+  \frac{\partial \omega}{\partial t} & =
   \{ \omega, \phi\}
   - \kappa\frac{\partial n}{\partial y} -\nu\nabla^4\omega
 \end{align}
 \end{subequations}
 
-For the Hasegawa - Wakatani model we the following equations
+The Hasegawa - Wakatani model is written as follows
 
 \begin{subequations}
 \begin{align}
- \nabla^2 \phi =  \omega, \quad \\
- \frac{\partial n}{\partial t}     = - g \frac{\partial \phi}{\partial y} + \alpha (\tilde{\phi} - \tilde{n})
+ \nabla^2 \phi & =  \omega, \quad \\
+ \frac{\partial n}{\partial t}     & =  - g \frac{\partial \phi}{\partial y} + \alpha (\tilde{\phi} - \tilde{n})
  + \{n, \phi\} + D \nabla^2 n \\
-  \frac{\partial \omega}{\partial t} = \alpha ( \tilde{\phi} - \tilde{n}) + \{ \omega, \phi\}
+  \frac{\partial \omega}{\partial t} & =  \alpha ( \tilde{\phi} - \tilde{n}) + \{ \omega, \phi\}
+- \mu\nabla^4\omega
+\end{align}
+\end{subequations}
+
+The variables $\tilde{\phi}$ and $\tilde{n}$ represents low frequency fluctuations. Their relation with $\phi$ and $n$ is studied in two ways. In the ordinary HW model, $\tilde{\phi} = \phi$ and $\tilde{n} = n$. In the modified HW model: 
+
+\begin{subequations}
+\begin{align}
+\phi & = \tilde{\phi} + <\phi> \\
+n & = \tilde{n} + <n>
+\end{align}
+\end{subequations}
+
+where $<...>$ represents the averagive in the poloidal direction. For this reason, we can write the modified HW model equations as 
+
+\begin{subequations}
+\begin{align}
+ \nabla^2 \phi & =  \omega, \quad \\
+ \frac{\partial n}{\partial t}    & = - g \frac{\partial \phi}{\partial y} + \alpha [(\phi - <\phi>) - (n - <n>)]
+ + \{n, \phi\} + D \nabla^2 n \\
+  \frac{\partial \omega}{\partial t} & = \alpha [(\phi - <\phi>) - (n - <n>)]  + \{ \omega, \phi\}
   - \mu\nabla^4\omega
 \end{align}
 \end{subequations}
 
-The variables $\tilde{\phi}$ and $\tilde{n}$ represents low frequency fluctuations. Their relation with $\phi$ and $n$ is given by
+
+In general, as a method to mix and unmix the equations, the complete set will be unified as
 
 \begin{subequations}
 \begin{align}
-\phi = \tilde{\phi} + <\phi> \\
-n = \tilde{n} + <n>
-\end{align}
-\end{subequations}
-
-where $<...>$ represents the averagive in the poloidal direction. For this reason, we can write the HW model equations as 
-
-\begin{subequations}
-\begin{align}
- \nabla^2 \phi =  \omega, \quad \\
- \frac{\partial n}{\partial t}     = - g \frac{\partial \phi}{\partial y} + \alpha [(\phi - <\phi>) - (n - <n>)]
+ \nabla^2 \phi & =  \omega, \quad \\
+ \frac{\partial n}{\partial t}     & = (\kappa - g) \frac{\partial \phi}{\partial y} + \alpha (\tilde{\phi} - \tilde{n})
  + \{n, \phi\} + D \nabla^2 n \\
-  \frac{\partial \omega}{\partial t} = \alpha [(\phi - <\phi>) - (n - <n>)]  + \{ \omega, \phi\}
-  - \mu\nabla^4\omega
+  \frac{\partial \omega}{\partial t} & =  - \kappa\frac{\partial n}{\partial y} + \alpha ( \tilde{\phi} - \tilde{n}) + \{ \omega, \phi\}
+- \mu\nabla^4\omega
 \end{align}
 \end{subequations}
 
-which can be approximated with $<n> \approx 0$ and $<\phi>\approx 0$.
+
+For the last model, we made a Complete model, with equations such like:
+
+\begin{subequations}
+\begin{align}
+ -\nabla^2 \phi & =  \omega, \quad  \\
+ \frac{d n}{d t} & = - g \left(\frac{\partial n}{\partial y} - n \frac{\partial \phi}{\partial y}\right) + \alpha\theta(- x + x_a) (\tilde{\phi} - \tilde{n}) + S_n(x, n) - \sigma\theta(x - x_b) e^{\Lambda - \phi} + D \nabla^2 n  \\
+  \frac{d \omega}{d  t} & =  - \frac{g}{n}\frac{\partial n}{\partial y} + \alpha\theta(- x + x_a) ( \tilde{\phi} - \tilde{n}) +\sigma\theta(x - x_b)\left(1-e^{\Lambda-\phi}\right) - \mu\nabla^4\omega
+\end{align}
+\end{subequations}
+
+where the total derivative with time refers to the advective derivative:
+
+\begin{equation}
+\frac{d}{dt} = \frac{\partial}{\partial t} + \boldsymbol{v_{E\times B} \nabla}
+\end{equation}
+
+and the source term works as:
+
+\begin{equation}
+S(n) = -\theta(- x + x_a)\frac{n - n_b}{\tau}
+\end{equation}
+
+It is important to understand that $\phi$ is defined negative, this means that we should always change the sign of it in the code.
+
+
+%It is important to notice that in the code the parameter $\phi$ is negative, this means that the new term must be rewriten as: 
+%
+%\begin{subequations}
+%\begin{align}
+% \nabla^2 \phi & =  \omega, \quad \\
+% \frac{\partial n}{\partial t}     & =  - g \frac{\partial \phi}{\partial y} + \alpha (-\tilde{\phi} - \tilde{n})
+% + \{n, \phi\} + D \nabla^2 n \\
+%  \frac{\partial \omega}{\partial t} & =  \alpha ( -\tilde{\phi} - \tilde{n}) + \{ \omega, \phi\}
+%  + \mu\nabla^2\omega
+%\end{align}
+%\end{subequations}
 
 
 
@@ -156,7 +205,7 @@ The domain is $[0,l_x]\times[0,l_y]$.
 We have periodic boundaries in $y$. In $x$ we choose homogeneous Dirichlet boundary conditions for all quantities.
 Initialization of $n$ is a Gaussian
 \begin{align}
-    n(x,y) = A\exp\left( -\frac{(x-X)^2 + (y-Y)^2}{2\sigma^2}\right)
+    n(x,y) = A\exp\left( -\frac{(x-X)^2 + (y-Y)^2}{2\sigma^2}\right) + n_b
     \label{}
 \end{align}
 where $X = p_x l_x$ and $Y=p_yl_y$ with $p_x$, $p_y\in [0,1]$ are the initial centre of mass position coordinates, $A$ is the amplitude and $\sigma$ the
@@ -231,6 +280,8 @@ Input file format: json
 \begin{longtable}{llll>{\RaggedRight}p{7cm}}
 \toprule
 \rowcolor{gray!50}\textbf{Name} &  \textbf{Type} & \textbf{Example} & \textbf{Default} & \textbf{Description}  \\ \midrule
+model  & char  & "HW" & - & \# Parameter to specify the model to use, the options are HW and IC \\
+make\_average & bool & 1 & - & \# Parameter to choose if the HW model should take into account the average of $n$ and $\phi$ \\
 n      & integer & 3 & - &\# Gaussian nodes in x and y \\
 Nx     & integer &60& - &\# grid points in x \\
 Ny     & integer &60& - &\# grid points in y \\
@@ -244,6 +295,7 @@ eps\_pol   & float &1e-6    & - &  accuracy of polarisation solver \\
 eps\_time  & float &1e-10   & - & accuracy of implicit time-stepper \\
 stages & integer & 3 & 3 & \# of stages in the  multigrid algorithm ( Nx and Ny have to be divisable by 2**stages) \\
 curvature  & float &0.00015& - & magnetic curvature $\kappa$ \\
+adiabatic  & float &0.01& - & Adabiatic constant for the Hasegawa - Wakatami model $\alpha$\\
 nu\_perp    & float &5e-3   & - & pependicular viscosity $\nu$ \\
 amplitude  & float &0.5    & - & amplitude $A$ of the blob \\
 sigma      & float &10     & - & blob radius $\sigma$ \\
