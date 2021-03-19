@@ -67,6 +67,7 @@ int main( int argc, char* argv[])
     Json::CharReaderBuilder parser;
     parser["collectComments"] = false;
     std::string errs;
+
     if( argc != num_args)
     {
         #ifdef FELTOR_MPI
@@ -101,13 +102,15 @@ int main( int argc, char* argv[])
   	//exp is the explicit part and imp the implicit. Both defined as
   	//classes form the convection.h file (obviously)
     convection::ExplicitPart< CartesianGrid2d, DMatrix, DVec > exp( grid, p);
-    convection::ImplicitPart< CartesianGrid2d, DMatrix, DVec > imp( grid, p.nu);
+    convection::ImplicitPart< CartesianGrid2d, DMatrix, DVec > imp( grid, p);
     //////////////////create initial vector///////////////////////////////////////
     dg::Gaussian g( p.posX*p.lx, p.posY*p.ly, p.sigma, p.sigma, p.amp); //gaussian width is in absolute values
     std::array<DVec,2> y0{
-        dg::evaluate( g, grid), //n == Gaussian
+        dg::evaluate(g, grid),
         dg::evaluate(dg::zero,grid) // omega == 0
     };
+    {DVec ones(dg::evaluate(dg::one, grid));
+    dg::blas1::axpby( p.nb,  ones, 1., y0[0]);}
     //////////////////initialisation of timekarniadakis and first step///////////////////
     double time = 0;
     dg::Karniadakis< std::array<DVec,2> > karniadakis( y0, y0[0].size(), p.eps_time);
@@ -121,32 +124,6 @@ int main( int argc, char* argv[])
     int dim_ids[3], tvarID;
 
     MPI_OUT err = dg::file::define_dimensions( ncid, dim_ids, &tvarID, grid_out);
-
-    //Time ids
-    int EtimeID, EtimevarID;
-    MPI_OUT err = dg::file::define_time( ncid, "energy_time", &EtimeID, &EtimevarID);
-
-    //energy IDs
-    std::array<int,4> invariantID, dissID;
-    std::array<std::string,4> invariant_names { { "mass", "entropy", "kinetic", "curvature"}};
-    std::array<std::string,4> dissipation_names{ { "mass_diss", "entropy_diss", "kinetic_diss", "curvature_diss"}};
-    for( int i=0; i<4; i++)
-    {
-       MPI_OUT err = nc_def_var( ncid, invariant_names[i].c_str(),  NC_DOUBLE, 1, &EtimeID, &invariantID[i]);
-       MPI_OUT err = nc_def_var( ncid, dissipation_names[i].c_str(), NC_DOUBLE, 1, &EtimeID, &dissID[i]);
-    }
-    MPI_OUT err = nc_enddef(ncid);
-
-    size_t Ecount[] = {1};
-    size_t Estart[] = {0};
-
-    MPI_OUT err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
-
-    for( int i=0; i<4; i++)
-    {
-       MPI_OUT err = nc_put_vara_double( ncid, invariantID[i], Estart, Ecount, &exp.invariants()[i]);
-       MPI_OUT err = nc_put_vara_double( ncid, dissID[i], Estart, Ecount, &exp.invariants_diffusion()[i]);
-    }
 
     DVec transfer (dg::evaluate(dg::zero, grid));
 
@@ -176,8 +153,7 @@ int main( int argc, char* argv[])
     MPI_OUT std::cout << "Exiting the fields" << std::endl;
 
     ///////////////////////////////////////Timeloop/////////////////////////////////
-    const double mass0 = exp.invariants()[0], mass_blob0 = mass0 - grid.lx()*grid.ly();
-    double E0 = exp.invariants()[1] + exp.invariants()[2], E1 = 0, diff = 0;
+    const double mass0 = exp.mass(), mass_blob0 = mass0 - grid.lx()*grid.ly();
     dg::Timer t;
     t.tic();
     try
@@ -199,28 +175,7 @@ int main( int argc, char* argv[])
                 karniadakis.step( exp, imp, time, y0);
             //store accuracy details
             {
-                MPI_OUT std::cout << "(m_tot-m_0)/m_0: "<< (exp.invariants()[0]-mass0)/mass_blob0<<"\t";
-                E0 = E1;
-                E1 = exp.invariants()[1] + exp.invariants()[2];
-                diff = (E1 - E0)/p.dt;
-                double diss = exp.invariants_diffusion()[1]+exp.invariants_diffusion()[2];
-                MPI_OUT std::cout << "diff: "<< diff<<" diss: "<<diss<<"\t";
-                MPI_OUT std::cout << "Accuracy: "<< 2.*(diff-diss)/(diff+diss)<<"\n";
-            }
-
-            Estart[0] += 1;
-            {
-                MPI_OUT std::cout << 0 <<std::endl;
-                MPI_OUT err = nc_open(argv[2], NC_WRITE, &ncid);
-
-                MPI_OUT err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
-                for( int i=0; i<4; i++)
-                {
-                   MPI_OUT err = nc_put_vara_double( ncid, invariantID[i], Estart, Ecount, &exp.invariants()[i]);
-                   MPI_OUT err = nc_put_vara_double( ncid, dissID[i], Estart, Ecount, &exp.invariants_diffusion()[i]);
-                }
-
-                MPI_OUT err = nc_close(ncid);
+                MPI_OUT std::cout << "(m_tot-m_0)/m_0: "<< (exp.mass()-mass0)/mass_blob0<<"\t";
             }
         }
         //////////////////////////write fields/////////////////////////
