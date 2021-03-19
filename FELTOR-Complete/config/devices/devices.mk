@@ -6,7 +6,7 @@ CFLAGS+=-D_FORCE_INLINES # solves issue with std=c++11
 CFLAGS+=-D_MWAITXINTRIN_H_INCLUDED # solves issue with std=c++11
 ############################################
 mpiccc_:=$(MPICC)
-MPICC=nvcc --compiler-bindir $(mpiccc_)
+MPICC=nvcc -x cu --compiler-bindir $(mpiccc_)
 MPICFLAGS+= $(NVCCARCH) $(NVCCFLAGS)
 MPICFLAGS+=-D_FORCE_INLINES # solves issue with std=c++11
 MPICFLAGS+=-D_MWAITXINTRIN_H_INCLUDED # solves issue with std=c++11
@@ -24,4 +24,3 @@ ifeq ($(strip $(device)),skl)
 OPT=-xCORE-AVX512 -mtune=skylake -O3
 #OPT=-O3 -mtune=skylake
 endif #device=mic
-
