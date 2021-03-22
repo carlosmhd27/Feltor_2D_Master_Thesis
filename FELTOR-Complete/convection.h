@@ -12,7 +12,7 @@ struct ImplicitPart
 {
     ImplicitPart( const Geometry& g, const Parameters& p):
         m_HW(p.modified), m_nu(p.nu), m_fau(1 / p.tau),
-        m_S_domain(dg::evaluate(dg::TanhProfX(p.x_a, 0.001, -1., 0., 1.), g)),
+        m_S_domain(dg::evaluate(dg::TanhProfX(p.x_a, p.tanh_width, -1., 0., 1.), g)),
         m_Source(m_S_domain), m_nb(dg::evaluate(dg::one, g)),
         m_LaplacianM_perp( g, dg::normed, dg::centered),
         m_temp( evaluate( dg::zero, g))
@@ -104,7 +104,7 @@ template< class Geometry, class M, class container>
 ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const Parameters& p ):
     m_IC(p.modified), m_HW(p.modified), m_modified(p.modified),
     m_eps_pol(p.eps_pol),  m_nu(p.nu), m_kappa(p.kappa), m_g(p.g),
-    m_alpha(dg::evaluate(dg::one, grid)),
+    m_alpha(dg::evaluate(dg::zero, grid)),
     m_sigma(m_alpha),
     m_lambda(m_alpha), m_lmbd_phi(m_alpha),
     m_x( dg::evaluate( dg::cooX2d, grid)), m_vol2d( dg::create::volume(grid)),
@@ -181,11 +181,12 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 
 	/// insert phi for the next extrapolation
     m_old_phi.update( m_phi);
+    dg::blas1::scal(m_phi, -1.);
 
     // v_x  = -dy phi (phi is defined negative)
-    dg::blas2::symv( -1., m_dy_phi, m_phi, 0., m_vx);
+    dg::blas2::symv(  1., m_dy_phi, m_phi, 0., m_vx);
     // v_y = dx phi (phi is defined negative)
-    dg::blas2::symv( 1., m_dx_phi, m_phi, 0., m_vy);
+    dg::blas2::symv( -1., m_dx_phi, m_phi, 0., m_vy);
 
 	/// Total mass: Integrate n in the V    Vol       n
     m_mass =  dg::blas1::dot( m_vol2d, y[0] );
@@ -209,7 +210,7 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
         m_advection_omega.upwind( -1., m_vx, m_vy, y[1], 0., yp[1]);
         for (unsigned i=0; i<2;i++) {
             dg::blas1::pointwiseDot ( -1., m_alpha,   m_n_perturbation, 1., yp[i]);
-            dg::blas1::pointwiseDot ( -1., m_alpha, m_phi_perturbation, 1., yp[i]);
+            dg::blas1::pointwiseDot (  1., m_alpha, m_phi_perturbation, 1., yp[i]);
     }}
 	else {
             ///// [m_phi, y] = yp We compute the Poisson brackets
@@ -228,11 +229,12 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     // Exponentials
     // Create the Exponential
     if(m_IC){
-    dg::blas1::axpby(1., m_lambda, 1., m_phi, m_lmbd_phi);
+    dg::blas1::axpby(1., m_lambda, -1., m_phi, m_lmbd_phi);
     dg::blas1::transform( m_lmbd_phi, m_exp_phi, dg::EXP<double>());
     dg::blas1::pointwiseDot(m_exp_phi, m_sigma, m_exp_phi);
 
-    dg::blas1::axpby(-1, m_exp_phi, 1., yp[0]);
+    dg::blas1::pointwiseDot(m_exp_phi, m_sigma, m_exp_phi);
+    dg::blas1::pointwiseDot(-1, y[0], m_exp_phi, 1., yp[0]);
     dg::blas1::axpbypgz(1, m_sigma, -1, m_exp_phi, 1., yp[1]);
     }
 ///////////////////////////Complete/////////////////////////////////////

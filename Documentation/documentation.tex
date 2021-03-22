@@ -166,8 +166,8 @@ For the last model, we made a Complete model, with equations such like:
 \begin{subequations}
 \begin{align}
  \nabla^2 \phi & =  \omega, \quad  \\
- \frac{d n}{d t} & = -(\kappa - g) \left(\frac{\partial n}{\partial y} - n \frac{\partial \phi}{\partial y}\right) + \alpha\theta(- x + x_a) (\tilde{\phi} - \tilde{n}) + S_n(x, n) - \sigma\theta(x - x_b) e^{\Lambda - \phi} - \mu \nabla^4 n  \\
-  \frac{d \omega}{d  t} & =  - \frac{g}{n}\frac{\partial n}{\partial y} + \alpha\theta(- x + x_a) ( \tilde{\phi} - \tilde{n}) +\sigma\theta(x - x_b)\left(1-e^{\Lambda-\phi}\right) - \mu\nabla^4\omega
+ \frac{d n}{d t} & = -(g -\kappa) \left(\frac{\partial n}{\partial y} - n \frac{\partial \phi}{\partial y}\right) + \alpha (\tilde{\phi} - \tilde{n}) + S_n(x, n) - \sigma n e^{\Lambda - \phi} - \mu \nabla^4 n  \\
+  \frac{d \omega}{d  t} & =  - \frac{\kappa}{n}\frac{\partial n}{\partial y} + \alpha ( \tilde{\phi} - \tilde{n}) +\sigma\left(1-e^{\Lambda-\phi}\right) - \mu\nabla^4\omega
 \end{align}
 \end{subequations}
 
@@ -180,29 +180,42 @@ where the total derivative with time refers to the advective derivative:
 where $\boldsymbol{v_{E\times B}}$ is defined as
 
 \begin{equation}
-\boldsymbol{v_{E\times B}} = \frac{\boldsymbol{E\times B}}{ B^2}´ = (-\partial_y\phi,~\partial_x\phi)
+\boldsymbol{v_{E\times B}} = \frac{\boldsymbol{E\times B}}{ B^2}´ = (-\partial_y\phi,~\partial_x\phi),
 \end{equation}
 
-and the source term works as:
+the source term works as:
 
 \begin{equation}
-S(n) = -\theta(- x + x_a)\frac{n - n_b}{\tau}
+S(n) = 
+ \left\{\begin{array}{lr}
+        -\frac{n - n_b}{\tau}, & \text{if } x\leq x_a\\
+        0, & \text{if } x > x_a\\
+        \end{array}\right.
 \end{equation}
 
-It is important to understand that $\phi$ is defined negative, this means that we should always change the sign of it in the code. This is a direct consequence of the definition of the vorticity, $\omega = \nabla^2\phi$. If we want to actually solve $\phi$ from the vorticity, we need to make the system negative, as the eigenvalues should be positive. Due to this fact, in every step of the algorithm, the sign of the potential is inverted.
+the term $\alpha$ becomes a Heavised delta function:
+
+\begin{equation}
+\alpha =  
+ \left\{\begin{array}{lr}
+        \alpha, & \text{if } x\leq x_b\\
+        0, & \text{for } x > x_b\\
+        \end{array}\right.
+\end{equation}
+
+same for $\sigma$:
+
+\begin{equation}
+\sigma =  
+ \left\{\begin{array}{lr}
+        0, & \text{if } x\leq x_b\\
+        \sigma, & \text{if } x > x_b\\
+        \end{array}\right.
+\end{equation}
 
 
-%It is important to notice that in the code the parameter $\phi$ is negative, this means that the new term must be rewriten as: 
-%
-%\begin{subequations}
-%\begin{align}
-% \nabla^2 \phi & =  \omega, \quad \\
-% \frac{\partial n}{\partial t}     & =  - g \frac{\partial \phi}{\partial y} + \alpha (-\tilde{\phi} - \tilde{n})
-% + \{n, \phi\} - D \nabla^4 n \\
-%  \frac{\partial \omega}{\partial t} & =  \alpha ( -\tilde{\phi} - \tilde{n}) + \{ \omega, \phi\}
-%  + \mu\nabla^2\omega
-%\end{align}
-%\end{subequations}
+It is important to understand that $\phi$ is defined negative, this means that we should always change the sign of it in the code. This is a direct consequence of the definition of the vorticity, $\omega = \nabla^2\phi$. If we want to actually solve $\phi$ from the vorticity, we need to make the system negative, as the eigenvalues should be positive. Due to this fact, after calculating the potential, the sign of the potential is inverted.
+
 
 
 
