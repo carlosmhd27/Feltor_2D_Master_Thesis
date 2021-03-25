@@ -55,6 +55,12 @@ class Analyse ():
         #         self.CM(); self.V_CM()
 
     def find_model(self):
+        '''
+        A function to get the name of the model. The FELTOR simulator gets different
+        names than the ones used to call them. This is caused because to use the
+        HW modified, we use the variable modified=1. For that reason, we need to
+        "translate" the name. I.e. model='HW' & modified=0 ==> 'HW_ord'
+        '''
         self.model = self.input['model']
         if 'HW' in self.model:
             model = self.model
@@ -86,9 +92,9 @@ class Analyse ():
         for all the time steps
         The velocidty of the Center of Mass is a 2D vector, for that reason we
         obtain 2 coordinate, X and Y, separately.
-        In this case it is calculated as V = (x_i - x_i-1) / (t_i - t_i-1)
-        For that reason V(0) = (0, 0), this prevent as from having an arbitrary
-        speed for the las position.
+        In this case it is calculated as grad(X, time), using the numpy gradient
+        function, which uses V = (x_i+1 - x_i-1) / (t_i+1 - t_i-1) for every value
+        except the boundaries, which uses V = (x_i - x_i-1) / (t_i - t_i-1).
         '''
 
         self.V_CM_x = gradient(self.X_CM, self.time)
@@ -181,7 +187,11 @@ class Analyse ():
 
     def c_corr_dt (self, f, g, time_units = 1):
         '''
-        cross-correlation time-delay
+        Cross-correlation time-delay. It is inspired in the discrete correlation
+        But as we only need to look at a correlation for a tiny time shift, time_units,
+        it does it with for loops. It is important to take into account that the lack
+        of an infinite amount of values would make values decrease as they approach
+        the borders. For that reason, the function always take the same amount of values.
         '''
 
         assert array_equal(shape(f), shape(g)), 'The dimensions of f and g should be equal'
@@ -204,7 +214,9 @@ class Analyse ():
 
     def c_corr_sp (self, f, g, x0=None, y0=None, integrate = False):
         '''
-        Spatial cross-correlation, x and y should not be integrated
+        Spatial cross-correlation, x and y should not be integrated. In this case,
+        we avoid using the numpy and scipy functions for correlation, as they padd the
+        signal with 0s, but we have a periodic signal.
         '''
 
         assert array_equal(shape(f), shape(g)), 'The dimensions of f and g should be equal'
@@ -251,7 +263,14 @@ class Analyse ():
 
     def cpsd(self, f, g, fs = None, x0=None, y0=None, Norm = False, **kwargs):
         '''
-        Function to calculate the Cross - power Spectral density
+        Function to calculate the Cross - power Spectral density of 2 signals.
+        We are insterested in using this to separate apmplitude, which would give us
+        an intuition of the probability distribution; and the phase, which is the most
+        used important quantity here. For that reaso, we get the amplitude and phase.
+        Also, take into account that if we average the phase, the code will make
+        a weighted average, because the phases that contribute more are those
+        which have higher probability.
+        The default values of it are expected to copy the matlab function.
         '''
 
         assert array_equal(shape(f), shape(g)), 'The dimensions of f and g should be equal'
@@ -291,6 +310,12 @@ class Analyse ():
         return Amp, Ang, f
 
     def save_matlab(self, variables_dic, name = None, model = None):
+        '''
+        A function that allow us to save the values we want into a matlab file.
+        This was used to compare Python and Matlab functions. As matlab integrate
+        function does not allow uneven grids nor integrate over an axis. Same with
+        the CPSD function.
+        '''
 
         if type(model) == type(None):
             model = self.model
@@ -300,7 +325,13 @@ class Analyse ():
         savemat(name, mdict = variables_dic)
 
     def perturbation(self, variable, averg_var = None, intervals = None):
-
+        '''
+        Take out the trend of a signal to get only the perturbation.
+        We shall accept that the variables obtained from simulations can be
+        separated into: n = ñ + <n>, where <n> is the average and ñ the perturbation.
+        It is important to notice that we are only interested in analysing the
+        perturbation ñ.
+        '''
 
         if type(variable) == str:
             perturb = copy(self.Data[variable][:])
@@ -311,7 +342,7 @@ class Analyse ():
             averg_var = self.integrate(perturb, dim_integral = 1, typ = 'y') / self.ly
 
         if type(intervals) == type(None):
-            return perturb - avergae(averg_var)
+            return perturb - average(averg_var)
 
         else:
             for i in range(len(intervals)):
