@@ -31,16 +31,18 @@ class Analyse ():
         self.input = loads(self.Data.inputfile)
         self.find_model()
 
+        self.Nx = self.input['n_out'] * self.input['Nx_out']
+        self.Ny = self.input['n_out'] * self.input['Ny_out']
+        self.nt = len(self.time)
+        if self.nt < 2:
+            raise ValueError('The field contains only the initial conditions')
+
         self.x  = copy(self.Data['x'][:])
         self.y  = copy(self.Data['y'][:])
         self.lx, self.ly = self.input['lx'], self.input['ly']
 
         self.time = copy(self.Data['time'][:])
         self.dt   = self.time[1] - self.time[0]
-
-        self.Nx = self.input['n_out'] * self.input['Nx_out']
-        self.Ny = self.input['n_out'] * self.input['Ny_out']
-        self.nt = len(self.time)
 
         self.ions      = copy(self.Data['ions'][:])
         self.potential = copy(self.Data['potential'][:])
@@ -289,10 +291,7 @@ class Analyse ():
         return Amp, Ang, f
 
     def save_matlab(self, variables_dic, name = None, model = None):
-        '''
-        Save any variable with matlab format. It is a dummy function created when comparating
-        the CPSD between matlab and SciPy
-        '''
+
         if type(model) == type(None):
             model = self.model
         if type(name) == type(None):
@@ -301,10 +300,7 @@ class Analyse ():
         savemat(name, mdict = variables_dic)
 
     def perturbation(self, variable, averg_var = None, intervals = None):
-        '''
-        A Function to erase the signal from the perturbation in an interval.
-        It is essential if we want to calculate the CPSD
-        '''
+
 
         if type(variable) == str:
             perturb = copy(self.Data[variable][:])
@@ -323,15 +319,13 @@ class Analyse ():
 
             return perturb
 
-
-
 class units():
     '''
     A class to calculate Kappa and alpha from the characteristics of the tokamaks
-    a and R_0 are the minor and major radius in m, B is the magnetic field of 
+    a and R_0 are the minor and major radius in m, B is the magnetic field of
     the coils in T, T_e is the electron temperature in eV and the nucleus is the
-    fuel, generally Deuterium D, otherwise give m_i in kg (use scipy.constants 
-    m_n and m_p for simplicity) 
+    fuel, generally Deuterium D, otherwise give m_i in kg (use scipy.constants
+    m_n and m_p for simplicity)
     '''
     def __init__(self, R_0 = None, a = None, B = 1, T_e = 20, nucleus = 'D', m_i = None):
         self.R_0 = R_0; self.a = a; self.B = B
