@@ -23,11 +23,6 @@ fps = 5
 i   = 1   ## to reduce the number of points we use
 
 ## We define the directory where the outputs are located and confirm it exists
-# try:
-#    dir_out = sys.argv[1]
-# except:
-#    dir_out = 'DIR_NEU_3'
-
 #dir_name  = '/marconi_scratch/userexternal/crodrigu/Large_output/hdiff_outputs/'
 dir_name = argv[1]
 if rank == 0:
@@ -120,6 +115,3 @@ if rank < len(models):
     with open(info_file, 'a') as information:
         information.write('After {} h and {:.1f} min, I am done with model: {}'.format(nd_hr, nd_mn, model + extra) + 2 * "\n")
     print('After {} h and {:.1f} min, I am done with model: {}'.format(nd_hr, nd_mn, model + extra) + 2 * "\n")
-
-    #except:
-    #   print('Something went wrong')
