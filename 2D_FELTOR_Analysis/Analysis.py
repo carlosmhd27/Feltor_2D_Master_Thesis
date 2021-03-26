@@ -31,23 +31,21 @@ class Analyse ():
         self.input = loads(self.Data.inputfile)
         self.find_model()
 
-        self.Nx = self.input['n_out'] * self.input['Nx_out']
-        self.Ny = self.input['n_out'] * self.input['Ny_out']
-        self.nt = len(self.time)
+        self.Nx   = self.input['n_out'] * self.input['Nx_out']
+        self.Ny   = self.input['n_out'] * self.input['Ny_out']
+        self.time = copy(self.Data['time'][:])
+        self.nt   = len(self.time)
         if self.nt < 2:
             raise ValueError('The field contains only the initial conditions')
 
-        self.x  = copy(self.Data['x'][:])
-        self.y  = copy(self.Data['y'][:])
-        self.lx, self.ly = self.input['lx'], self.input['ly']
-
-        self.time = copy(self.Data['time'][:])
-        self.dt   = self.time[1] - self.time[0]
+        self.x,  self.y  = copy(self.Data['x'][:]), copy(self.Data['y'][:])
+        self.lx, self.ly = self.input['lx'],        self.input['ly']
+        self.dt  = self.time[1] - self.time[0]
 
         self.ions      = copy(self.Data['ions'][:])
         self.potential = copy(self.Data['potential'][:])
-        # self.v_r       = - gradient(self.potential, self.y, axis = 2)
         self.v_r       = gradient(self.potential, self.y, axis = 2)
+        self.v_r       = -self.v_r if 'complete' in File_name.lower() else self.v_r
         self.vorticity = copy(self.Data['vorticity'][:])
 
         self.Mass      = self.integrate('ions') / (self.lx * self.ly)
