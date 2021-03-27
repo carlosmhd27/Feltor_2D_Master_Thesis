@@ -184,9 +184,9 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     dg::blas1::scal(m_phi, -1.);
 
     // v_x  = -dy phi (phi is defined negative)
-    dg::blas2::symv(  1., m_dy_phi, m_phi, 0., m_vx);
+    dg::blas2::symv( -1., m_dy_phi, m_phi, 0., m_vx);
     // v_y = dx phi (phi is defined negative)
-    dg::blas2::symv( -1., m_dx_phi, m_phi, 0., m_vy);
+    dg::blas2::symv(  1., m_dx_phi, m_phi, 0., m_vy);
 
 	/// Total mass: Integrate n in the V    Vol       n
     m_mass =  dg::blas1::dot( m_vol2d, y[0] );
