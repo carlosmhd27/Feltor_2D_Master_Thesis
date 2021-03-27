@@ -223,8 +223,8 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 ///////////////////////////Complete/////////////////////////////////////
 	///              -m_kappa * M   *   x + a * y
     dg::blas2::symv(m_dy_n, y[0], m_dn_dy);   // n derivative
-    dg::blas1::axpby(-m_g, m_dn_dy, 1., yp[0]);
-    dg::blas1::pointwiseDot(-m_g,  y[0], m_vx, 1., yp[0]); // -(g-kappa) n d_y phi (-V_x)
+    dg::blas1::axpby(m_g, m_dn_dy, 1., yp[0]);
+    dg::blas1::pointwiseDot(m_g,  y[0], m_vx, 1., yp[0]); // -(g-kappa) n d_y phi (-V_x)
     dg::blas1::pointwiseDivide( -m_kappa, m_dn_dy, y[0], 1., yp[1]);// -kappa   d_y n  /  n
     // Exponentials
     // Create the Exponential
