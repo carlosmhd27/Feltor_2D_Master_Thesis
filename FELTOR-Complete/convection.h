@@ -77,7 +77,7 @@ struct ExplicitPart
     const bool m_modified;
     const double m_eps_pol;
     const double m_nu, m_kappa;
-    double m_g;
+    // double m_g;
     container m_alpha, m_sigma;
     container m_lambda, m_lmbd_phi;
     const container m_x, m_vol2d;
@@ -103,7 +103,7 @@ struct ExplicitPart
 template< class Geometry, class M, class container>
 ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const Parameters& p ):
     m_IC(p.modified), m_HW(p.modified), m_modified(p.modified),
-    m_eps_pol(p.eps_pol),  m_nu(p.nu), m_kappa(p.kappa), m_g(p.g),
+    m_eps_pol(p.eps_pol),  m_nu(p.nu), m_kappa(p.kappa), // m_g(p.g),
     m_alpha(dg::evaluate(dg::zero, grid)),
     m_sigma(m_alpha),
     m_lambda(m_alpha), m_lmbd_phi(m_alpha),
@@ -122,7 +122,7 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     m_old_phi( 2, m_phi),
     m_average(grid, dg::coo2d::y)
     {
-    m_g += -m_kappa;
+    // m_g += -m_kappa;
     //construct multigrid
     m_multi_pol.resize(p.stages);
     for( unsigned u=0; u<p.stages; u++)
@@ -223,8 +223,8 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 ///////////////////////////Complete/////////////////////////////////////
 	///              -m_kappa * M   *   x + a * y
     dg::blas2::symv(m_dy_n, y[0], m_dn_dy);   // n derivative
-    dg::blas1::axpby(m_g, m_dn_dy, 1., yp[0]);
-    dg::blas1::pointwiseDot(m_g,  y[0], m_vx, 1., yp[0]); // -(g-kappa) n d_y phi (-V_x)
+    dg::blas1::axpby( -m_kappa, m_dn_dy, 1., yp[0]);
+    dg::blas1::pointwiseDot( -m_kappa,  y[0], m_vx, 1., yp[0]); // -(g-kappa) n d_y phi (-V_x)
     dg::blas1::pointwiseDivide( -m_kappa, m_dn_dy, y[0], 1., yp[1]);// -kappa   d_y n  /  n
     // Exponentials
     // Create the Exponential
