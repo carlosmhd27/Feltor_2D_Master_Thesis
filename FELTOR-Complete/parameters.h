@@ -68,7 +68,7 @@ struct Parameters
 	ly         = js["ly"].asDouble();
 	tanh_width = js["tanh_width"].asDouble();
 	x_a        = js["x_a"].asDouble() * lx;
-	x_b        = js["x_b"].asDouble() * ly;
+	x_b        = js["x_b"].asDouble() * lx;
 
 	bc_x_n      = dg::str2bc(js["bc_x_n"].asString());
 	bc_y_n      = dg::str2bc(js["bc_y_n"].asString());
