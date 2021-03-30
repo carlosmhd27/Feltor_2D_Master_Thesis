@@ -24,7 +24,8 @@ struct Parameters
 	double kappa, g, alpha, sgm, nu;
 	double tau, nb, lambda;
 
-	double amp, sigma, posX, posY;
+	double amp,  sigma,  posX,  posY;
+	double amp2, sigma2, posX2, posY2;
 
 	double lx, ly;
 	double tanh_width, x_a, x_b;
@@ -59,11 +60,15 @@ struct Parameters
 	nb       = js["nb"].asDouble();
 	nu       = js["nu_perp"].asDouble();     // Dissipation
 
-	amp   = js["amplitude"].asDouble();
-	sigma = js["sigma"].asDouble();
+	amp    = js["amplitude"].asDouble();
+	amp2   = js["amplitude2"].asDouble();
+	sigma  = js["sigma"].asDouble();
+	sigma2 = js["sigma2"].asDouble();
+	posX   = js["posX"].asDouble();
+	posX2  = js["posX2"].asDouble();
+	posY   = js["posY"].asDouble();
+	posY2  = js["posY2"].asDouble();
 
-	posX       = js["posX"].asDouble();
-	posY       = js["posY"].asDouble();
 	lx         = js["lx"].asDouble();
 	ly         = js["ly"].asDouble();
 	tanh_width = js["tanh_width"].asDouble();
@@ -91,7 +96,7 @@ struct Parameters
             <<"              Viscosity:              = "<<nu<<"\n"
             <<"              Curvature:              = "<<kappa<<"\n"
 			<<"Density profile (not in use anymore): = "<<g<<"\n"
-			<<"           adiabatic parameter        = "<<alpha<<"\n"
+			<<"           adiabatic paramete:        = "<<alpha<<"\n"
 			<<"           Sheath dissipation:        = "<<sgm<<"\n"
 			<<"            Sheath potential:         = "<<lambda<<"\n"
 			<<"             Source's tau             = "<<tau<<"\n"
@@ -102,6 +107,12 @@ struct Parameters
             << "   amplitude:   = "<<amp<<"\n"
             << "     posX:      =  "<<posX<<"\n"
             << "     posY:      =  "<<posY<<"\n";
+
+		os  <<"2nd blob parameters are: \n"
+			<< "     width:     = "<<sigma2<<"\n"
+			<< "   amplitude:   = "<<amp2<<"\n"
+			<< "     posX:      = "<<posX2<<"\n"
+			<< "     posY:      = "<<posY2<<"\n";
 
         os << "Boundary parameters are: \n"
             <<"    lx = "<<lx<<"\n"

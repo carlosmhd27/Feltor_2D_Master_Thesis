@@ -104,13 +104,15 @@ int main( int argc, char* argv[])
     convection::ExplicitPart< CartesianGrid2d, DMatrix, DVec > exp( grid, p);
     convection::ImplicitPart< CartesianGrid2d, DMatrix, DVec > imp( grid, p);
     //////////////////create initial vector///////////////////////////////////////
-    dg::Gaussian g( p.posX*p.lx, p.posY*p.ly, p.sigma, p.sigma, p.amp); //gaussian width is in absolute values
+    dg::Gaussian g ( p.posX *p.lx, p.posY *p.ly, p.sigma,  p.sigma,  p.amp ); //gaussian width is in absolute values
+    dg::Gaussian g2( p.posX2*p.lx, p.posY2*p.ly, p.sigma2, p.sigma2, p.amp2); //gaussian width is in absolute values
     std::array<DVec,2> y0{
         dg::evaluate(g, grid),
         dg::evaluate(dg::zero,grid) // omega == 0
     };
     {DVec ones(dg::evaluate(dg::one, grid));
-    dg::blas1::axpby( p.nb,  ones, 1., y0[0]);}
+    DVec g22(dg::evaluate(g2, grid));
+    dg::blas1::axpbypgz( p.nb,  ones, 1., g22, 1., y0[0]);}
     //////////////////initialisation of timekarniadakis and first step///////////////////
     double time = 0;
     dg::Karniadakis< std::array<DVec,2> > karniadakis( y0, y0[0].size(), p.eps_time);
