@@ -28,7 +28,7 @@
 	"sigma": 1,
 	"posX": 0.5,
 	"posY": 0.5,
-	"amplitude2": 0.,
+	"amplitude2": 0,
 	"sigma2": 1,
 	"posX2": 0.75,
 	"posY2": 0.5,
