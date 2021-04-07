@@ -232,8 +232,6 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     dg::blas1::axpby(1., m_lambda, -1., m_phi, m_lmbd_phi);
     dg::blas1::transform( m_lmbd_phi, m_exp_phi, dg::EXP<double>());
     dg::blas1::pointwiseDot(m_exp_phi, m_sigma, m_exp_phi);
-
-    dg::blas1::pointwiseDot(m_exp_phi, m_sigma, m_exp_phi);
     dg::blas1::pointwiseDot(-1, y[0], m_exp_phi, 1., yp[0]);
     dg::blas1::axpbypgz(1, m_sigma, -1, m_exp_phi, 1., yp[1]);
     }
