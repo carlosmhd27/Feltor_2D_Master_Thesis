@@ -43,13 +43,13 @@ class Analyse ():
         self.dt  = self.time[1] - self.time[0]
 
         self.ions      = copy(self.Data['ions'][:])
-        self.potential = copy(self.Data['potential'][:])
-        self.v_r       = gradient(self.potential, self.y, axis = 2)
-        self.v_r       = -self.v_r if 'complete' in File_name.lower() else self.v_r
+        sign = 1. if 'complete' in File_name.lower() else -1.
+        self.potential = sign *copy(self.Data['potential'][:])
+        self.v_r       = -gradient(self.potential, self.y, axis = 2)
         self.vorticity = copy(self.Data['vorticity'][:])
 
         self.Mass      = self.integrate('ions') / (self.lx * self.ly)
-        self.Potential = self.integrate('potential') / (self.lx * self.ly)
+        self.Potential = self.integrate(self.potential) / (self.lx * self.ly)
         #         self.CM(); self.V_CM()
 
     def find_model(self):
