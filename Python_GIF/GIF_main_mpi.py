@@ -1,15 +1,18 @@
 from GIF_modules import Analyzed, animate, init
 from datetime    import datetime
 from os.path     import join, exists, isdir
-from os          import remove
+from os          import remove, listdir
 from sys         import argv
 from time        import time
 from numpy       import arange
+from warnings    import warn
 from mpi4py      import MPI
 
 from matplotlib.pyplot    import clf, show, subplots
 from matplotlib.animation import writers, FuncAnimation
 from matplotlib           import use
+
+#from moviepy.editor import VideoFileClip
 
 use("Agg")
 
@@ -20,9 +23,8 @@ name = MPI.Get_processor_name()
 wrtr = 'pillow'
 ## General variables
 fps = 5
-i   = 1   ## to reduce the number of points we use
+i   = 5   ## to reduce the number of points we use
 
-## We define the directory where the outputs are located and confirm it exists
 #dir_name  = '/marconi_scratch/userexternal/crodrigu/Large_output/hdiff_outputs/'
 dir_name = argv[1]
 if rank == 0:
@@ -37,19 +39,24 @@ if len(argv) > 1:
     else:
         extra += '_' + argv[2]
 
-if 'Mix' in dir_name:
-    models = ['HW_ord', 'HW_mod']
-elif 'tanh' in dir_name:
-    models = ["IC_HW_mod", "IC_HW_ord", 'HW_mod_IC', 'HW_ord_IC']
-elif 'Complete' in dir_name and size ==2:
-    models = ['HW_mod_IC', 'HW_ord_IC']
-elif 'complete' in dir_name and size==5:
-    models = ['HW_mod_IC', 'HW_ord_IC', 'HW_ord', 'HW_mod', 'IC']
-else:
-    models = ['IC', 'HW_mod', 'HW_ord']
+all_models = ['IC', 'HW_mod', 'HW_ord', 'IC_HW_mod', 'IC_HW_ord',
+              'HW_mod_IC', 'HW_ord_IC']
+
+files = listdir(dir_name)
+models = []
+for file in files:
+    if '.nc' in file:
+        model = file[7:-3]
+        if model in all_models:
+            models.append(model)
+        else:
+            warn(f'The model {model} seem not to much the defatul models')
+
+assert len(models) > 0, 'There are no outputs in this folder!'
 
 if size < len(models):
     print(f'Not all the videos will be created, size = {size} out of {len(models)}')
+    print(f' The program will not process {models[size:]}')
 
 if rank < len(models):
     model = models[rank]
@@ -82,7 +89,7 @@ if rank < len(models):
 
     ## We analysis the file and obtain the values we wanna measure
     Analytics = Analyzed(File_name)
-
+    print(f'The length of the output is {Analytics.nt}')
     with open(info_file, 'a') as information:
         information.write('+' * 50 + "\n")
         information.write(f'model: {model + extra}, with {len(Analytics.ions) // i} out of {len(Analytics.ions)} points in the GIF' + "\n")
@@ -108,6 +115,9 @@ if rank < len(models):
     # show()
     clf()
 
+#    clip = VideoFileClip(GIF_name)
+#    clip.write_videofile(GIF_name.replace(".gif", ".mp4"))
+
     stop   = time()
     needed = stop - start
     nd_hr  = needed // 3600
@@ -115,3 +125,6 @@ if rank < len(models):
     with open(info_file, 'a') as information:
         information.write('After {} h and {:.1f} min, I am done with model: {}'.format(nd_hr, nd_mn, model + extra) + 2 * "\n")
     print('After {} h and {:.1f} min, I am done with model: {}'.format(nd_hr, nd_mn, model + extra) + 2 * "\n")
+
+    #except:
+    #   print('Something went wrong')
