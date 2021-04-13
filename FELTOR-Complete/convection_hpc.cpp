@@ -142,8 +142,11 @@ int main( int argc, char* argv[])
 
     // Probe IDs
     #ifndef FELTOR_MPI
-    int probeID;
+    int probeID, EtimevarID, EtimeID;
     if (p.save_pb){
+        //Time ids
+        err = dg::file::define_time( ncid, "energy_time", &EtimeID, &EtimevarID);
+
         int probevarID, probevarxID, probevaryID;
         size_t count_probs[] = {probes.size()};
         size_t start_probs[] = {0};
@@ -188,13 +191,16 @@ int main( int argc, char* argv[])
     #ifndef FELTOR_MPI
     std::array<std::vector<double>, 4> transfer_prb;
     int dim_prb_ids[2] = {EtimeID, probeID};
-    size_t count_prb[] = {1, probes.size()};
-    size_t start_prb[] = {0, 0};
+    size_t count_prb[2] = {1, probes.size()};
+    size_t start_prb[2] = {0, 0};
+    size_t Ecount[1] = {1};
+    size_t Estart[1] = {0};
     int dataIDs_prb[4];
     std::string names_prb[4] = {"electrons_probes", "ions_probes", "potential_probes", "vorticity_probes"};
 
     if (p.save_pb){
         //Fields center point
+        MPI_OUT err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
 
         //////////////first output ////////////
         for (auto probe: probes){
