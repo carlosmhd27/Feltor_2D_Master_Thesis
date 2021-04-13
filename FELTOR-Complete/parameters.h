@@ -18,6 +18,8 @@ struct Parameters
 	unsigned n_out, Nx_out, Ny_out;
 	unsigned itstp;
 	unsigned maxout;
+	unsigned save_pb;
+	std::vector<std::array<unsigned, 2>> probes;
 	unsigned stages;
 
 	double eps_pol, eps_time;
@@ -48,6 +50,14 @@ struct Parameters
 	itstp   = js["itstp"].asUInt();
 	maxout  = js["maxout"].asUInt();
 
+	if (save_pb){
+	try{
+		for (auto probe: js["probes"])
+			probes.push_back({probe[0].asUInt(), probe[1].asUInt()});
+	}
+	catch(...){
+		probes.push_back({js["probes"][0].asUInt(), js["probes"][1].asUInt()});
+	}}
 	eps_pol  = js["eps_pol"].asDouble();
 	eps_time = js["eps_time"].asDouble();
 	stages   = js.get("stages",3).asUInt();
@@ -101,6 +111,11 @@ struct Parameters
 			<<"            Sheath potential:         = "<<lambda<<"\n"
 			<<"             Source's tau             = "<<tau<<"\n"
 			<<"                 nb                   = "<<nb<<"\n";
+
+		if (save_pb){
+		for(auto probe: probes){
+			os << "Position measured at " << probe[0]
+			   << "and " << probe[1] << "\n";}}
 
         os  <<"Blob parameters are: \n"
             << "     width:     = "<<sigma<<"\n"

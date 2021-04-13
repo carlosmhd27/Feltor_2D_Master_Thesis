@@ -13,56 +13,66 @@ struct Parameters
 {
 	std::string model;
 	bool modified;
-  unsigned n, Nx, Ny;
-  double dt;
-  unsigned n_out, Nx_out, Ny_out;
-  unsigned itstp;
-  unsigned maxout;
-  unsigned stages;
+	unsigned n, Nx, Ny;
+	double dt;
+	unsigned n_out, Nx_out, Ny_out;
+	unsigned itstp;
+	unsigned maxout;
+	unsigned save_pb;
+	std::vector<std::array<unsigned, 2>> probes;
+	unsigned stages;
 
-  double eps_pol, eps_time;
-  double kappa, nu, g, alpha;
+	double eps_pol, eps_time;
+	double kappa, nu, g, alpha;
 
-  double amp, sigma, posX, posY;
+	double amp, sigma, posX, posY;
 
-  double lx, ly;
-  dg::bc bc_x, bc_y;
+	double lx, ly;
+	dg::bc bc_x, bc_y;
 
-
-  Parameters( const Json::Value& js) {
-  model    = js["model"].asString();
+	Parameters( const Json::Value& js) {
+	model    = js["model"].asString();
 	modified = js["modified"].asBool();
 
 	n       = js["n"].asUInt();
-  Nx      = js["Nx"].asUInt();
-  Ny      = js["Ny"].asUInt();
-  dt      = js["dt"].asDouble();
-  n_out   = js["n_out"].asUInt();
-  Nx_out  = js["Nx_out"].asUInt();
-  Ny_out  = js["Ny_out"].asUInt();
-  itstp   = js["itstp"].asUInt();
-  maxout  = js["maxout"].asUInt();
+	Nx      = js["Nx"].asUInt();
+	Ny      = js["Ny"].asUInt();
+	dt      = js["dt"].asDouble();
+	n_out   = js["n_out"].asUInt();
+	Nx_out  = js["Nx_out"].asUInt();
+	Ny_out  = js["Ny_out"].asUInt();
+	itstp   = js["itstp"].asUInt();
+	maxout  = js["maxout"].asUInt();
+	save_pb = js["save_probes"].asUInt();
 
-  eps_pol     = js["eps_pol"].asDouble();
-  eps_time    = js["eps_time"].asDouble();
-  stages      = js.get("stages",3).asUInt();
-  kappa       = js["curvature"].asDouble();
-  g           = js["dens_prof"].asDouble();
+	if (save_pb){
+	try{
+		for (auto probe: js["probes"])
+			probes.push_back({probe[0].asUInt(), probe[1].asUInt()});
+	}
+	catch(...){
+		probes.push_back({js["probes"][0].asUInt(), js["probes"][1].asUInt()});
+	}}
+	eps_pol     = js["eps_pol"].asDouble();
+	eps_time    = js["eps_time"].asDouble();
+	stages      = js.get("stages",3).asUInt();
+	kappa       = js["curvature"].asDouble();
+	g           = js["dens_prof"].asDouble();
 	alpha       = js["adiabatic"].asDouble();
 	nu          = js["nu_perp"].asDouble();     // Dissipation
-  amp         = js["amplitude"].asDouble();
-  sigma       = js["sigma"].asDouble();
-  posX        = js["posX"].asDouble();
-  posY        = js["posY"].asDouble();
-  lx          = js["lx"].asDouble();
-  ly          = js["ly"].asDouble();
-  bc_x        = dg::str2bc(js["bc_x"].asString());
-  bc_y        = dg::str2bc(js["bc_y"].asString());
+	amp         = js["amplitude"].asDouble();
+	sigma       = js["sigma"].asDouble();
+	posX        = js["posX"].asDouble();
+	posY        = js["posY"].asDouble();
+	lx          = js["lx"].asDouble();
+	ly          = js["ly"].asDouble();
+	bc_x        = dg::str2bc(js["bc_x"].asString());
+	bc_y        = dg::str2bc(js["bc_y"].asString());
   }
 
     void display( std::ostream& os = std::cout ) const
     {   os << "The model we are using is " <<model<<"\n"
-		   << "Use the modified HW model: " << modified<<"\n";
+		    << "Use the modified HW model: " << modified<<"\n";
         os << "Physical parameters are: \n"
             <<"    Viscosity:       = "<<nu<<"\n"
             <<"    Curvature:       = "<<kappa<<"\n"
@@ -73,6 +83,12 @@ struct Parameters
             << "    amplitude:    "<<amp<<"\n"
             << "    posX:         "<<posX<<"\n"
             << "    posY:         "<<posY<<"\n";
+
+		if (save_pb){
+		for(auto probe: probes){
+			os << "Position measured at " << probe[0]
+			   << "and " << probe[1] << "\n";}}
+
         os << "Boundary parameters are: \n"
             <<"    lx = "<<lx<<"\n"
             <<"    ly = "<<ly<<"\n";

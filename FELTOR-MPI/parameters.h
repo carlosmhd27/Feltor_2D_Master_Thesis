@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include "dg/algorithm.h"
-#include "json/json.h" // Marconi
-// #include <jsoncpp/json/json.h> // New json
+// #include "json/json.h"
+#include <jsoncpp/json/json.h>
 
 namespace convection{
 
@@ -11,87 +11,112 @@ namespace convection{
  */
 struct Parameters
 {
-	  std::string model;
-	  bool modified;
-	  double tanh_width, x_b;
-	  unsigned n, Nx, Ny;
-	  double dt;
-	  unsigned n_out, Nx_out, Ny_out;
-	  unsigned itstp;
-	  unsigned maxout;
-	  unsigned stages;
+	std::string model;
+	bool modified;
+	double tanh_width, x_b;
+	unsigned n, Nx, Ny;
+	double dt;
+	unsigned n_out, Nx_out, Ny_out;
+	unsigned itstp;
+	unsigned maxout;
+	unsigned save_pb;
+	std::vector<std::array<unsigned, 2>> probes;
+	unsigned stages;
 
-	  double eps_pol, eps_time;
-	  double kappa, nu, g, alpha;
+	double eps_pol, eps_time;
+	double kappa, g, alpha, sgm, nu;
+	double tau, nb, lambda;
 
-	  double amp, sigma, posX, posY;
+	double amp, sigma, posX, posY;
 
-	  double lx, ly;
-	  dg::bc bc_x, bc_y;
+	double lx, ly;
+	dg::bc bc_x, bc_y;
 
 
-    Parameters( const Json::Value& js) {
-        model      = js["model"].asString();
-        modified   = js["modified"].asBool();
-        tanh_width = js["tanh_width"].asDouble();
-		x_b        = js["x_b"].asDouble();
+	Parameters( const Json::Value& js) {
+	model    = js["model"].asString();
+	modified = js["modified"].asBool();
+	tanh_width = js["tanh_width"].asDouble();
+	x_b        = js["x_b"].asDouble();
 
-		n       = js["n"].asUInt();
-        Nx      = js["Nx"].asUInt();
-        Ny      = js["Ny"].asUInt();
-        dt      = js["dt"].asDouble();
-        n_out   = js["n_out"].asUInt();
-        Nx_out  = js["Nx_out"].asUInt();
-        Ny_out  = js["Ny_out"].asUInt();
-        itstp   = js["itstp"].asUInt();
-        maxout  = js["maxout"].asUInt();
+	n       = js["n"].asUInt();
+	Nx      = js["Nx"].asUInt();
+	Ny      = js["Ny"].asUInt();
+	dt      = js["dt"].asDouble();
+	n_out   = js["n_out"].asUInt();
+	Nx_out  = js["Nx_out"].asUInt();
+	Ny_out  = js["Ny_out"].asUInt();
+	itstp   = js["itstp"].asUInt();
+	maxout  = js["maxout"].asUInt();
+	save_pb = js["save_probes"].asUInt();
 
-        eps_pol     = js["eps_pol"].asDouble();
-        eps_time    = js["eps_time"].asDouble();
-        stages      = js.get("stages",3).asUInt();
-        kappa       = js["curvature"].asDouble();
-        g           = js["dens_prof"].asDouble();
-        alpha       = js["adiabatic"].asDouble();
-        nu          = js["nu_perp"].asDouble();     // Dissipation
-        amp         = js["amplitude"].asDouble();
-        sigma       = js["sigma"].asDouble();
-        posX        = js["posX"].asDouble();
-        posY        = js["posY"].asDouble();
-        lx          = js["lx"].asDouble();
-        ly          = js["ly"].asDouble();
-        bc_x        = dg::str2bc(js["bc_x"].asString());
-        bc_y        = dg::str2bc(js["bc_y"].asString());
-    }
+	if (save_pb){
+	try{
+		for (auto probe: js["probes"])
+			probes.push_back({probe[0].asUInt(), probe[1].asUInt()});
+	}
+	catch(...){
+		probes.push_back({js["probes"][0].asUInt(), js["probes"][1].asUInt()});
+	}}
+	eps_pol     = js["eps_pol"].asDouble();
+	eps_time    = js["eps_time"].asDouble();
+	stages      = js.get("stages",3).asUInt();
+	kappa       = js["curvature"].asDouble();
+	g           = js["dens_prof"].asDouble();
+	alpha       = js["adiabatic"].asDouble();
+	sgm         = js["sheath_diss"].asDouble();
+	lambda      = js["sheath_pot"].asDouble();
+	tau         = js["tau"].asDouble();
+	nb          = js["nb"].asDouble();
+	nu          = js["nu_perp"].asDouble();     // Dissipation
+	amp         = js["amplitude"].asDouble();
+	sigma       = js["sigma"].asDouble();
+	posX        = js["posX"].asDouble();
+	posY        = js["posY"].asDouble();
+	lx          = js["lx"].asDouble();
+	ly          = js["ly"].asDouble();
+	bc_x      = dg::str2bc(js["bc_x"].asString());
+	bc_y      = dg::str2bc(js["bc_y"].asString());
+	}
 
     void display( std::ostream& os = std::cout ) const
     {   os << "The model we are using is " <<model<<"\n"
-		   		  << "Use the modified HW model: " << modified<<"\n";
+			<< "Use the modified HW model: " << modified<<"\n";
 
-				os << "The tanh profile for a possible Mix model has \n"
-				    << " x_b:  = " << x_b << "\n"
-						<< "width: = " << tanh_width << "\n";
+		os << "The tanh profile for a possible Mix model has \n"
+			<< " x_b:  = " << x_b << "\n"
+			<< "width: = " << tanh_width << "\n";
 
         os << "Physical parameters are: \n"
-          	<<"    Viscosity:       = "<<nu<<"\n"
-          	<<"    Curvature:       = "<<kappa<<"\n"
-					 	<<"  density profile:   = "<<g<<"\n"
-						<<" adiabatic parameter = "<<alpha<<"\n";
+            <<"    Viscosity:       = "<<nu<<"\n"
+            <<"    Curvature:       = "<<kappa<<"\n"
+			<<"  density profile:   = "<<g<<"\n"
+			<<" adiabatic parameter = "<<alpha<<"\n"
+			<<" Sheath dissipation: = "<<sgm<<"\n"
+			<<"  Sheath potential:  = "<<lambda<<"\n"
+			<<"   Source's tau      = "<<tau<<"\n"
+			<<"       nb            = "<<nb<<"\n";
 
-        os <<"Blob parameters are: \n"
-          	<< "    width:        "<<sigma<<"\n"
-          	<< "    amplitude:    "<<amp<<"\n"
-          	<< "    posX:         "<<posX<<"\n"
-          	<< "    posY:         "<<posY<<"\n";
+        os  <<"Blob parameters are: \n"
+            << "    width:        "<<sigma<<"\n"
+            << "    amplitude:    "<<amp<<"\n"
+            << "    posX:         "<<posX<<"\n"
+            << "    posY:         "<<posY<<"\n";
+
+		if (save_pb){
+		for(auto probe: probes){
+			os << "Position measured at " << probe[0]
+			   << "and " << probe[1] << "\n";}}
 
         os << "Boundary parameters are: \n"
             <<"    lx = "<<lx<<"\n"
             <<"    ly = "<<ly<<"\n";
 
+			 //Curious! dg:: is not needed due to ADL!
         os << "Boundary conditions in x are: \n"
-            <<"    "<<bc2str(bc_x)<<"\n";  //Curious! dg:: is not needed due to ADL!
-
+			<<"   n:  "<<bc2str(bc_x)<<"\n";
         os << "Boundary conditions in y are: \n"
-            <<"    "<<bc2str(bc_y)<<"\n";
+			<<"   n:  "<<bc2str(bc_y)<<"\n";
 
         os << "Algorithmic parameters are: \n"
             <<"    n  = "<<n<<"\n"

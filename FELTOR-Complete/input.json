@@ -1,6 +1,7 @@
 {
 	"model": "IC",
 	"modified": 1,
+	"save_probes": 1,
 	"tanh_width": 0.01,
 	"x_a": 0,
 	"x_b": 0,
@@ -16,7 +17,7 @@
 	"eps_pol": 1e-06,
 	"eps_time": 1e-10,
 	"stages": 3,
-	"curvature": 0.015,
+	"curvature": 0.0015,
 	"dens_prof": 1,
 	"adiabatic": 0.05,
 	"sheath_diss": 5e-4,
@@ -45,5 +46,6 @@
 	"rows": 1,
 	"cols": 2,
 	"width": 1000,
-	"height": 500
+	"height": 500,
+	"probes": [[16, 48], [32, 32]]
 }

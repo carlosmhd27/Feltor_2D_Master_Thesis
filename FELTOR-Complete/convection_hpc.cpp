@@ -98,6 +98,19 @@ int main( int argc, char* argv[])
                     , comm
                     #endif //FELTOR_MPI
     );
+    #ifndef FELTOR_MPI
+    std::vector<unsigned> probes;
+    std::vector<double>   probesx, probesy;
+    if (p.save_pb){
+        dg::Grid1d gridx( grid.x0(), grid.x1(), grid.n(), grid.Nx());
+        dg::Grid1d gridy( grid.y0(), grid.y1(), grid.n(), grid.Ny());
+        dg::HVec x_axis(dg::create::abscissas(gridx)), y_axis(dg::create::abscissas(gridy));
+        for(unsigned i=0; i<p.probes.size(); i++){
+            probes.push_back(p.probes[i][1] * p.n * p.Ny * p.n + p.probes[i][0] * p.n);
+            probesx.push_back(x_axis[p.n * p.probes[i][0]]);
+            probesy.push_back(y_axis[p.n * p.probes[i][1]]);
+    }}
+    #endif
     //create RHS
   	//exp is the explicit part and imp the implicit. Both defined as
   	//classes form the convection.h file (obviously)
@@ -127,6 +140,23 @@ int main( int argc, char* argv[])
 
     MPI_OUT err = dg::file::define_dimensions( ncid, dim_ids, &tvarID, grid_out);
 
+    // Probe IDs
+    #ifndef FELTOR_MPI
+    int probeID;
+    if (p.save_pb){
+        int probevarID, probevarxID, probevaryID;
+        size_t count_probs[] = {probes.size()};
+        size_t start_probs[] = {0};
+        MPI_OUT err = nc_def_dim( ncid, "Probes",  probes.size(),  &probeID);
+        MPI_OUT err = nc_def_var( ncid, "Probes",   NC_UINT,   1, &probeID, &probevarID);
+        MPI_OUT err = nc_put_vara_uint( ncid, probevarID, start_probs, count_probs, probes.data());
+        MPI_OUT err = nc_def_var( ncid, "Probes_x",  NC_DOUBLE, 1, &probeID, &probevarxID);
+        MPI_OUT err = nc_put_vara_double( ncid, probevarxID, start_probs, count_probs, probesx.data());
+        MPI_OUT err = nc_def_var( ncid, "Probes_y",  NC_DOUBLE, 1, &probeID, &probevaryID);
+        MPI_OUT err = nc_put_vara_double( ncid, probevaryID, start_probs, count_probs, probesy.data());
+    }
+    #endif
+
     DVec transfer (dg::evaluate(dg::zero, grid));
 
     size_t start = 0, count = 1;
@@ -154,6 +184,33 @@ int main( int argc, char* argv[])
     MPI_OUT err = nc_put_vara_double( ncid, tvarID, &start, &count, &time);
     MPI_OUT std::cout << "Exiting the fields" << std::endl;
 
+
+    #ifndef FELTOR_MPI
+    std::array<std::vector<double>, 4> transfer_prb;
+    int dim_prb_ids[2] = {EtimeID, probeID};
+    size_t count_prb[] = {1, probes.size()};
+    size_t start_prb[] = {0, 0};
+    int dataIDs_prb[4];
+    std::string names_prb[4] = {"electrons_probes", "ions_probes", "potential_probes", "vorticity_probes"};
+
+    if (p.save_pb){
+        //Fields center point
+
+        //////////////first output ////////////
+        for (auto probe: probes){
+            transfer_prb[0].push_back(y0[0][probe]);
+            transfer_prb[1].push_back(y0[0][probe]);
+            transfer_prb[2].push_back(exp.potential()[probe]);
+            transfer_prb[3].push_back(y0[1][probe]);
+        }
+
+        for( unsigned i=0; i<4; i++){
+            MPI_OUT err = nc_def_var( ncid, names_prb[i].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[i]);
+            MPI_OUT err = nc_put_vara_double( ncid, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
+        }
+        MPI_OUT err = nc_close(ncid);
+    }
+    #endif
     ///////////////////////////////////////Timeloop/////////////////////////////////
     const double mass0 = exp.mass(), mass_blob0 = mass0 - grid.lx()*grid.ly();
     dg::Timer t;
@@ -179,6 +236,22 @@ int main( int argc, char* argv[])
             {
                 MPI_OUT std::cout << "(m_tot-m_0)/m_0: "<< (exp.mass()-mass0)/mass_blob0<<"\t";
             }
+            #ifndef FELTOR_MPI
+            if (p.save_pb){
+                start_prb[0] += 1;
+                {
+                MPI_OUT err = nc_open(argv[2], NC_WRITE, &ncid);
+                MPI_OUT err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
+                for (unsigned i = 0; i < probes.size(); i++){
+                    transfer_prb[0][i] = y0[0][probes[i]];
+                    transfer_prb[1][i] = y0[0][probes[i]];
+                    transfer_prb[2][i] = exp.potential()[probes[i]];
+                    transfer_prb[3][i] = y0[1][probes[i]];}
+                for (unsigned i = 0; i < 4; i++){
+                    MPI_OUT err = nc_put_vara_double( ncid, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
+                }}
+            }
+            #endif
         }
         //////////////////////////write fields/////////////////////////
         start = i;

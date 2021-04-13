@@ -33,6 +33,18 @@ int main( int argc, char* argv[])
     ////////////////////////////////set up computations///////////////////////////
     dg::Grid2d grid( 0, p.lx, 0, p.ly, p.n, p.Nx, p.Ny, p.bc_x, p.bc_y);
     dg::Grid2d grid_out( 0, p.lx, 0, p.ly, p.n_out, p.Nx_out, p.Ny_out, p.bc_x, p.bc_y);
+    std::vector<unsigned> probes;
+    std::vector<double>   probesx, probesy;
+    if (p.save_pb){
+    dg::Grid1d gridx( grid.x0(), grid.x1(), grid.n(), grid.Nx());
+    dg::Grid1d gridy( grid.y0(), grid.y1(), grid.n(), grid.Ny());
+    dg::HVec x_axis(dg::create::abscissas(gridx)), y_axis(dg::create::abscissas(gridy));
+    for(unsigned i=0; i<p.probes.size(); i++){
+        probes.push_back(p.probes[i][1] * p.n * p.Ny * p.n + p.probes[i][0] * p.n);
+        probesx.push_back(x_axis[p.n * p.probes[i][0]]);
+        probesy.push_back(y_axis[p.n * p.probes[i][1]]);
+        std::cout << "Xpositions" << probesx[i] << '\n';
+    }}
     //create RHS
 	//exp is the explicit part and imp the implicit. Both defined as
 	//classes form the convection.h file (obviously)
@@ -54,14 +66,29 @@ int main( int argc, char* argv[])
     err = nc_create( argv[2],NC_NETCDF4|NC_CLOBBER, &ncid);
     std::string input = js.toStyledString();
     err = nc_put_att_text( ncid, NC_GLOBAL, "inputfile", input.size(), input.data());
-    int dim_ids[3], tvarID;
 
+    //Fields dimenstions
+    int dim_ids[3], tvarID;
     err = dg::file::define_dimensions( ncid, dim_ids, &tvarID, grid_out);
 
     //Time ids
     int EtimeID, EtimevarID;
     err = dg::file::define_time( ncid, "energy_time", &EtimeID, &EtimevarID);
 
+    // Probe IDs
+    int probeID;
+    if (p.save_pb){
+        int probevarID, probevarxID, probevaryID;
+        size_t count_probs[] = {probes.size()};
+        size_t start_probs[] = {0};
+        err = nc_def_dim( ncid, "Probes",  probes.size(),  &probeID);
+        err = nc_def_var( ncid, "Probes",   NC_UINT,   1, &probeID, &probevarID);
+        err = nc_put_vara_uint( ncid, probevarID, start_probs, count_probs, probes.data());
+        err = nc_def_var( ncid, "Probes_x",  NC_DOUBLE, 1, &probeID, &probevarxID);
+        err = nc_put_vara_double( ncid, probevarxID, start_probs, count_probs, probesx.data());
+        err = nc_def_var( ncid, "Probes_y",  NC_DOUBLE, 1, &probeID, &probevaryID);
+        err = nc_put_vara_double( ncid, probevaryID, start_probs, count_probs, probesy.data());
+    }
     //energy IDs
     std::array<int,4> invariantID, dissID;
     std::array<std::string,4> invariant_names { { "mass", "entropy", "kinetic", "curvature"}};
@@ -85,7 +112,6 @@ int main( int argc, char* argv[])
     }
 
     dg::DVec transfer (dg::evaluate(dg::zero, grid));
-
     size_t count[3] = {1, grid_out.n()*grid_out.Ny(), grid_out.n()*grid_out.Nx()};
     size_t start[3] = {0, 0, 0}; // grid_out.n()*grid_out.Nx()
     int dataIDs[4];
@@ -93,7 +119,6 @@ int main( int argc, char* argv[])
     dg::IDMatrix interpolate = dg::create::interpolation( grid_out, grid);
     std::vector<dg::DVec> transferD(4, dg::evaluate(dg::zero, grid_out)); // grid_out
     dg::HVec transferH(dg::evaluate(dg::zero, grid_out)); // grid_out
-
     //field IDs
 
     for( unsigned i=0; i<4; i++){
@@ -110,7 +135,34 @@ int main( int argc, char* argv[])
         err = nc_put_vara_double( ncid, dataIDs[k], start, count, transferH.data() );
     }
     err = nc_put_vara_double( ncid, tvarID, start, count, &time);
-    std::cout << "Exiting the fields" << std::endl;
+
+
+    // std::vector<dg::DVec> transferD_1P(4, dg::evaluate( dg::zero, grid));
+    std::array<std::vector<double>, 4> transfer_prb;
+    int dim_prb_ids[2] = {EtimeID, probeID};
+    size_t count_prb[] = {1, probes.size()};
+    size_t start_prb[] = {0, 0};
+    int dataIDs_prb[4];
+    std::string names_prb[4] = {"electrons_probes", "ions_probes", "potential_probes", "vorticity_probes"};
+
+    if (p.save_pb){
+        //Fields center point
+
+        //////////////first output ////////////
+        for (auto probe: probes){
+            transfer_prb[0].push_back(y0[0][probe]);
+            transfer_prb[1].push_back(y0[0][probe]);
+            transfer_prb[2].push_back(exp.potential()[probe]);
+            transfer_prb[3].push_back(y0[1][probe]);
+        }
+
+        for( unsigned i=0; i<4; i++){
+            err = nc_def_var( ncid, names_prb[i].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[i]);
+            err = nc_put_vara_double( ncid, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
+        }
+
+        err = nc_close(ncid);
+    }
 
     ///////////////////////////////////////Timeloop/////////////////////////////////
     const double mass0 = exp.invariants()[0], mass_blob0 = mass0 - grid.lx()*grid.ly();
@@ -145,13 +197,24 @@ int main( int argc, char* argv[])
                 std::cout << "Accuracy: "<< 2.*(diff-diss)/(diff+diss)<<"\n";
             }
 
-            Estart[0] += 1;
+            Estart[0]    += 1;
             // start[0] +=1;
+            if (p.save_pb){start_prb[0] += 1;}
             {
-                std::cout << 0 <<std::endl;
                 err = nc_open(argv[2], NC_WRITE, &ncid);
-
                 err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
+                if (p.save_pb)
+                {
+                    for (unsigned i = 0; i < probes.size(); i++){
+                        transfer_prb[0][i] = y0[0][probes[i]];
+                        transfer_prb[1][i] = y0[0][probes[i]];
+                        transfer_prb[2][i] = exp.potential()[probes[i]];
+                        transfer_prb[3][i] = y0[1][probes[i]];}
+                    for (unsigned i = 0; i < 4; i++){
+                        err = nc_put_vara_double( ncid, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
+                    }
+                }
+
                 for( int i=0; i<4; i++)
                 {
                     err = nc_put_vara_double( ncid, invariantID[i], Estart, Ecount, &exp.invariants()[i]);
