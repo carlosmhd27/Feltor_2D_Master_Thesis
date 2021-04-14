@@ -255,7 +255,8 @@ int main( int argc, char* argv[])
                     transfer_prb[3][i] = y0[1][probes[i]];}
                 for (unsigned i = 0; i < 4; i++){
                     MPI_OUT err = nc_put_vara_double( ncid, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
-                }}
+                }
+                MPI_OUT err = nc_close(ncid);}
             }
             #endif
         }
