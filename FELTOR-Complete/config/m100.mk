@@ -5,7 +5,7 @@ ifeq ($(strip $(HPC_SYSTEM)),m100)
 #OMPFLAG=-qsmp=omp
 CFLAGS=-Wall -std=c++14 -DWITHOUT_VCL -mcpu=power9 # -mavx -mfma #flags for CC
 OPT=-O3 # optimization flags for host code
-NVCC=nvcc #CUDA compiler
+NVCC=nvcc -x cu#CUDA compiler
 NVCCARCH=-arch sm_70 -Xcudafe "--diag_suppress=code_is_unreachable --diag_suppress=initialization_not_reachable" #nvcc gpu compute capability
 NVCCFLAGS= -std=c++14 -Xcompiler "-mcpu=power9 -Wall"# -mavx -mfma" #flags for NVCC
 

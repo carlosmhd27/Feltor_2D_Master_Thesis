@@ -115,7 +115,6 @@ int main( int argc, char* argv[])
   	//exp is the explicit part and imp the implicit. Both defined as
   	//classes form the convection.h file (obviously)
     convection::ExplicitPart< CartesianGrid2d, DMatrix, DVec > exp( grid, p);
-    convection::ImplicitPart< CartesianGrid2d, DMatrix, DVec > imp( grid, p);
     //////////////////create initial vector///////////////////////////////////////
     dg::Gaussian g ( p.posX *p.lx, p.posY *p.ly, p.sigma,  p.sigma,  p.amp ); //gaussian width is in absolute values
     dg::Gaussian g2( p.posX2*p.lx, p.posY2*p.ly, p.sigma2, p.sigma2, p.amp2); //gaussian width is in absolute values
@@ -128,8 +127,13 @@ int main( int argc, char* argv[])
     dg::blas1::axpbypgz( p.nb,  ones, 1., g22, 1., y0[0]);}
     //////////////////initialisation of timekarniadakis and first step///////////////////
     double time = 0;
-    dg::Karniadakis< std::array<DVec,2> > karniadakis( y0, y0[0].size(), p.eps_time);
-    karniadakis.init( exp, imp, time, y0, p.dt);
+    // if(p.Time_Step == "Multistep"){
+    dg::ExplicitMultistep< std::array<dg::DVec,2> > stepper( "TVB-3-3", y0);
+    stepper.init( exp, time, y0, p.dt);
+// }
+//     else{
+//         dg::Adaptive<dg::ERKStep<std::array<dg::DVec, 2>>> stepper( "Bogacki-Shampine-4-2-3", y0);}
+
     /////////////////////////////set up netcdf/////////////////////////////////////
     dg::file::NC_Error_Handle err;
     int ncid;
@@ -185,7 +189,6 @@ int main( int argc, char* argv[])
         dg::file::put_vara_double( ncid, dataIDs[k], start, grid_out, transferH);
     }
     MPI_OUT err = nc_put_vara_double( ncid, tvarID, &start, &count, &time);
-    MPI_OUT std::cout << "Exiting the fields" << std::endl;
 
 
     #ifndef FELTOR_MPI
@@ -237,7 +240,12 @@ int main( int argc, char* argv[])
 
         for( unsigned j=0; j<p.itstp; j++)
         {
-                karniadakis.step( exp, imp, time, y0);
+            // if(p.Time_Step == "Multistep"){
+        stepper.step( exp, time, y0);
+        // }
+        //     else{
+        //         stepper.step( exp, time, y0, time, y0, dt, dg::pid_control, dg::l2norm, p.eps_time, p.eps_time);
+        //     }
             //store accuracy details
             {
                 MPI_OUT std::cout << "(m_tot-m_0)/m_0: "<< (exp.mass()-mass0)/mass_blob0<<"\t";

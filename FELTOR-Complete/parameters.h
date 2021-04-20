@@ -13,6 +13,7 @@ struct Parameters
 {
 	std::string model;
 	bool modified;
+    std::string Time_Step;
 	unsigned n, Nx, Ny;
 	double dt;
 	unsigned n_out, Nx_out, Ny_out;
@@ -30,7 +31,7 @@ struct Parameters
 	double amp2, sigma2, posX2, posY2;
 
 	double lx, ly;
-	double tanh_width, x_a, x_b;
+	double tanh_width, x_a, x_b, x_c;
 	dg::bc bc_x_n, bc_y_n;
 	dg::bc bc_x_omega, bc_y_omega;
 	dg::bc bc_x_phi, bc_y_phi;
@@ -39,7 +40,7 @@ struct Parameters
 	Parameters( const Json::Value& js) {
 	model      = js["model"].asString();
 	modified   = js["modified"].asBool();
-
+    Time_Step  = js["Time_Step"].asString();
 	n       = js["n"].asUInt();
 	Nx      = js["Nx"].asUInt();
 	Ny      = js["Ny"].asUInt();
@@ -84,6 +85,7 @@ struct Parameters
 	tanh_width = js["tanh_width"].asDouble();
 	x_a        = js["x_a"].asDouble() * lx;
 	x_b        = js["x_b"].asDouble() * lx;
+	x_c        = js["x_c"].asDouble() * lx;
 
 	bc_x_n      = dg::str2bc(js["bc_x_n"].asString());
 	bc_y_n      = dg::str2bc(js["bc_y_n"].asString());
@@ -95,11 +97,13 @@ struct Parameters
 
     void display( std::ostream& os = std::cout ) const
     {   os << "The model we are using is " <<model<<"\n"
-			<< "Use the modified HW model: " << modified<<"\n";
+			<< "Use the modified HW model: " << modified<<"\n"
+            << "    With time stepper:    "<< Time_Step <<"\n";
 
 		os << "Position of the boundaries between models \n"
 			<< "         x_a:          = " << x_a << "\n"
 			<< "         x_b:          = " << x_b << "\n"
+			<< "         x_c:          = " << x_c << "\n"
 			<< "width of the boundary: = " << tanh_width << "\n";
 
         os << "Physical parameters are: \n"

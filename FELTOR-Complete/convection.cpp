@@ -46,17 +46,18 @@ int main( int argc, char* argv[])
     dg::Grid2d grid( 0, p.lx, 0, p.ly, p.n, p.Nx, p.Ny, p.bc_x_n, p.bc_y_n);
     //create RHS
     convection::ExplicitPart<dg::CartesianGrid2d, dg::DMatrix, dg::DVec> exp( grid, p);
-    convection::ImplicitPart<dg::CartesianGrid2d, dg::DMatrix, dg::DVec> imp( grid, p);
     //////////////////create initial vector///////////////////////////////////////
     dg::Gaussian g( p.posX*p.lx, p.posY*p.ly, p.sigma, p.sigma, p.amp); //gaussian width is in absolute values
     std::array<dg::DVec,2> y0{
         dg::evaluate(g, grid),
         dg::evaluate(dg::zero,grid) // omega == 0
     };
-    {dg::DVec ones(dg::evaluate(dg::one, grid));
-    dg::blas1::axpby( p.nb,  ones, 1., y0[0]);}
+    //MW: our density variable is now y0 = n-nb
+    //{dg::DVec ones(dg::evaluate(dg::one, grid));
+    //dg::blas1::axpby( p.nb,  ones, 1., y0[0]);}
     //////////////////////////////////////////////////////////////////////
-    dg::Karniadakis< std::array<dg::DVec,2> > stepper( y0, y0[0].size(), p.eps_time);
+    //dg::ExplicitMultistep< std::array<dg::DVec,2> > stepper( "TVB-3-3", y0);
+    dg::Adaptive<dg::ERKStep<std::array<dg::DVec, 2>>> stepper( "Bogacki-Shampine-4-2-3", y0);
 
     dg::DVec dvisual( grid.size(), 0.);
     dg::HVec hvisual( grid.size(), 0.), visual(hvisual);
@@ -65,12 +66,13 @@ int main( int argc, char* argv[])
     //create timer
     dg::Timer t;
     double time = 0;
-    stepper.init( exp, imp, time, y0, p.dt);
+    //stepper.init( exp, time, y0, p.dt);
     const double mass0 = exp.mass(), mass_blob0 = mass0 - grid.lx()*grid.ly();
     // double E0 = exp.invariants()[1] + exp.invariants()[2], energy0 = E0, E1 = 0, diff = 0;
     std::cout << "Begin computation \n";
     std::cout << std::scientific << std::setprecision( 2);
     unsigned step = 0;
+    double dt = p.dt;
     while ( !glfwWindowShouldClose( w ))
     {
         //transform n to an equidistant grid
@@ -109,7 +111,8 @@ int main( int argc, char* argv[])
             {
                 std::cout << "(m_tot-m_0)/m_0: "<< (exp.mass()-mass0)/mass_blob0<<"\t";
             }
-            try{ stepper.step( exp, imp, time, y0);}
+            //try{ stepper.step( exp, time, y0);}
+            try{ stepper.step( exp, time, y0, time, y0, dt, dg::pid_control, dg::l2norm, p.eps_time, p.eps_time);}
             catch( dg::Fail& fail) {
                 std::cerr << "CG failed to converge to "<<fail.epsilon()<<"\n";
                 std::cerr << "Does Simulation respect CFL condition?\n";
