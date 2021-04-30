@@ -15,6 +15,9 @@ struct ExplicitPart
     const container& potential( ) const {
         return m_phi;
     }
+    const container& vradial( ) const {
+        return m_vx;
+    }
 
     void operator()( double t, const std::array<container,2>& y, std::array<container,2>& yp);
 
