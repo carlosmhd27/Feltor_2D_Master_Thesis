@@ -106,9 +106,9 @@ int main( int argc, char* argv[])
         dg::Grid1d gridy( grid.y0(), grid.y1(), grid.n(), grid.Ny());
         dg::HVec x_axis(dg::create::abscissas(gridx)), y_axis(dg::create::abscissas(gridy));
         for(unsigned i=0; i<p.probes.size(); i++){
-            probes.push_back(p.probes[i][1] * p.n * p.Ny * p.n + p.probes[i][0] * p.n);
-            probesx.push_back(x_axis[p.n * p.probes[i][0]]);
-            probesy.push_back(y_axis[p.n * p.probes[i][1]]);
+            probes.push_back(p.probes[i][1] * p.Ny * p.n + p.probes[i][0]);
+            probesx.push_back(x_axis[p.probes[i][0]]);
+            probesy.push_back(y_axis[p.probes[i][1]]);
     }}
     #endif
     //create RHS
@@ -135,9 +135,14 @@ int main( int argc, char* argv[])
 //         dg::Adaptive<dg::ERKStep<std::array<dg::DVec, 2>>> stepper( "Bogacki-Shampine-4-2-3", y0);}
 
     /////////////////////////////set up netcdf/////////////////////////////////////
-    dg::file::NC_Error_Handle err;
-    int ncid;
-    MPI_OUT err = nc_create( argv[2],NC_NETCDF4|NC_CLOBBER, &ncid);
+    dg::file::NC_Error_Handle err, err_prb;
+    int ncid, ncid_prb;
+    MPI_OUT err     = nc_create( argv[2],NC_NETCDF4|NC_CLOBBER, &ncid);
+    std::string nc_prb_fl = argv[2];
+    nc_prb_fl = nc_prb_fl.insert(nc_prb_fl.size() - 3, "_prbs" );
+    if(p.save_pb){
+        MPI_OUT err_prb = nc_create( nc_prb_fl.c_str(),NC_NETCDF4|NC_CLOBBER, &ncid_prb);
+    }
     std::string input = js.toStyledString();
     MPI_OUT err = nc_put_att_text( ncid, NC_GLOBAL, "inputfile", input.size(), input.data());
     int dim_ids[3], tvarID;
@@ -149,21 +154,20 @@ int main( int argc, char* argv[])
     int probeID, EtimevarID, EtimeID;
     if (p.save_pb){
         //Time ids
-        err = dg::file::define_time( ncid, "energy_time", &EtimeID, &EtimevarID);
+        err_prb = dg::file::define_time( ncid_prb, "energy_time", &EtimeID, &EtimevarID);
 
         int probevarID, probevarxID, probevaryID;
         size_t count_probs[] = {probes.size()};
         size_t start_probs[] = {0};
-        MPI_OUT err = nc_def_dim( ncid, "Probes",  probes.size(),  &probeID);
-        MPI_OUT err = nc_def_var( ncid, "Probes",   NC_UINT,   1, &probeID, &probevarID);
-        MPI_OUT err = nc_put_vara_uint( ncid, probevarID, start_probs, count_probs, probes.data());
-        MPI_OUT err = nc_def_var( ncid, "Probes_x",  NC_DOUBLE, 1, &probeID, &probevarxID);
-        MPI_OUT err = nc_put_vara_double( ncid, probevarxID, start_probs, count_probs, probesx.data());
-        MPI_OUT err = nc_def_var( ncid, "Probes_y",  NC_DOUBLE, 1, &probeID, &probevaryID);
-        MPI_OUT err = nc_put_vara_double( ncid, probevaryID, start_probs, count_probs, probesy.data());
+        MPI_OUT err_prb = nc_def_dim( ncid_prb, "Probes",  probes.size(),  &probeID);
+        MPI_OUT err_prb = nc_def_var( ncid_prb, "Probes",   NC_UINT,   1, &probeID, &probevarID);
+        MPI_OUT err_prb = nc_put_vara_uint( ncid_prb, probevarID, start_probs, count_probs, probes.data());
+        MPI_OUT err_prb = nc_def_var( ncid_prb, "Probes_x",  NC_DOUBLE, 1, &probeID, &probevarxID);
+        MPI_OUT err_prb = nc_put_vara_double( ncid_prb, probevarxID, start_probs, count_probs, probesx.data());
+        MPI_OUT err_prb = nc_def_var( ncid_prb, "Probes_y",  NC_DOUBLE, 1, &probeID, &probevaryID);
+        MPI_OUT err_prb = nc_put_vara_double( ncid_prb, probevaryID, start_probs, count_probs, probesy.data());
     }
     #endif
-
     DVec transfer (dg::evaluate(dg::zero, grid));
 
     size_t start = 0, count = 1;
@@ -176,12 +180,12 @@ int main( int argc, char* argv[])
     //field IDs
 
     for( unsigned i=0; i<4; i++){
-       MPI_OUT err = nc_def_var( ncid, names[i].data(), NC_DOUBLE, 3, dim_ids, &dataIDs[i]);}
+        MPI_OUT err = nc_def_var( ncid, names[i].data(), NC_DOUBLE, 3, dim_ids, &dataIDs[i]);}
 
-    dg::blas2::symv( interpolate, y0[0],           transferD[0]);
-    dg::blas2::symv( interpolate, y0[0],           transferD[1]);
-    dg::blas2::symv( interpolate, exp.potential(), transferD[2]);
-    dg::blas2::symv( interpolate, y0[1],           transferD[3]);
+        dg::blas2::symv( interpolate, y0[0],           transferD[0]);
+        dg::blas2::symv( interpolate, y0[0],           transferD[1]);
+        dg::blas2::symv( interpolate, exp.potential(), transferD[2]);
+        dg::blas2::symv( interpolate, y0[1],           transferD[3]);
 
     for( int k=0;k<4; k++)
     {
@@ -192,18 +196,18 @@ int main( int argc, char* argv[])
 
 
     #ifndef FELTOR_MPI
-    std::array<std::vector<double>, 4> transfer_prb;
+    std::array<std::vector<double>, 5> transfer_prb;
     int dim_prb_ids[2] = {EtimeID, probeID};
     size_t count_prb[2] = {1, probes.size()};
     size_t start_prb[2] = {0, 0};
-    size_t Ecount[1] = {1};
-    size_t Estart[1] = {0};
-    int dataIDs_prb[4];
-    std::string names_prb[4] = {"electrons_probes", "ions_probes", "potential_probes", "vorticity_probes"};
+    size_t Ecount[] = {1};
+    size_t Estart[] = {0};
+    int dataIDs_prb[5];
+    std::string names_prb[5] = {"electrons_probes", "ions_probes", "potential_probes", "vorticity_probes", "vr_probes"};
 
     if (p.save_pb){
-        //Fields center point
-        MPI_OUT err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
+        //Time
+        MPI_OUT err_prb = nc_put_vara_double( ncid_prb, EtimevarID, Estart, Ecount, &time);
 
         //////////////first output ////////////
         for (auto probe: probes){
@@ -211,13 +215,17 @@ int main( int argc, char* argv[])
             transfer_prb[1].push_back(y0[0][probe]);
             transfer_prb[2].push_back(exp.potential()[probe]);
             transfer_prb[3].push_back(y0[1][probe]);
+            transfer_prb[4].push_back(exp.vradial()[probe]);
         }
 
-        for( unsigned i=0; i<4; i++){
-            MPI_OUT err = nc_def_var( ncid, names_prb[i].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[i]);
-            MPI_OUT err = nc_put_vara_double( ncid, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
+        for( unsigned i=0; i<5; i++){
+            std::cout << "Let's define the probes " << i << '\n';
+            MPI_OUT err_prb = nc_def_var( ncid_prb, names_prb[i].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[i]);
+            std::cout << transfer_prb[i].size() << " " << probes.size() << '\n';
+            MPI_OUT err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
+            std::cout << "Done!" << '\n';
         }
-        MPI_OUT err = nc_close(ncid);
+        MPI_OUT err_prb = nc_close(ncid_prb);
     }
     #endif
     ///////////////////////////////////////Timeloop/////////////////////////////////
@@ -254,17 +262,18 @@ int main( int argc, char* argv[])
             if (p.save_pb){
                 start_prb[0] += 1;
                 {
-                MPI_OUT err = nc_open(argv[2], NC_WRITE, &ncid);
-                MPI_OUT err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
-                for (unsigned i = 0; i < probes.size(); i++){
-                    transfer_prb[0][i] = y0[0][probes[i]];
-                    transfer_prb[1][i] = y0[0][probes[i]];
-                    transfer_prb[2][i] = exp.potential()[probes[i]];
-                    transfer_prb[3][i] = y0[1][probes[i]];}
-                for (unsigned i = 0; i < 4; i++){
-                    MPI_OUT err = nc_put_vara_double( ncid, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
+                MPI_OUT err_prb = nc_open(nc_prb_fl.c_str(), NC_WRITE, &ncid_prb);
+                MPI_OUT err_prb = nc_put_vara_double( ncid_prb, EtimevarID, Estart, Ecount, &time);
+                for (unsigned k = 0; k < probes.size(); k++){
+                    transfer_prb[0][k] = y0[0][probes[k]];
+                    transfer_prb[1][k] = y0[0][probes[k]];
+                    transfer_prb[2][k] = exp.potential()[probes[k]];
+                    transfer_prb[3][k] = y0[1][probes[k]];
+                    transfer_prb[4][k] = exp.vradial()[probes[k]];}
+                for (unsigned k = 0; k < 5; k++){
+                    MPI_OUT err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], start_prb, count_prb, transfer_prb[k].data());
                 }
-                MPI_OUT err = nc_close(ncid);}
+                MPI_OUT err_prb = nc_close(ncid_prb);}
             }
             #endif
         }

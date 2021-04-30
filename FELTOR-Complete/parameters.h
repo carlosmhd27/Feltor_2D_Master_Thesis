@@ -19,7 +19,7 @@ struct Parameters
 	unsigned n_out, Nx_out, Ny_out;
 	unsigned itstp;
 	unsigned maxout;
-	unsigned save_pb;
+	bool save_pb;
 	std::vector<std::array<unsigned, 2>> probes;
 	unsigned stages;
 
@@ -40,6 +40,7 @@ struct Parameters
 	Parameters( const Json::Value& js) {
 	model      = js["model"].asString();
 	modified   = js["modified"].asBool();
+	save_pb   = js["save_probes"].asBool();
     Time_Step  = js["Time_Step"].asString();
 	n       = js["n"].asUInt();
 	Nx      = js["Nx"].asUInt();
