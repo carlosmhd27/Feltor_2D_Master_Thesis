@@ -263,7 +263,7 @@ int main( int argc, char* argv[])
                 start_prb[0] += 1;
                 {
                 MPI_OUT err_prb = nc_open(nc_prb_fl.c_str(), NC_WRITE, &ncid_prb);
-                MPI_OUT err_prb = nc_put_vara_double( ncid_prb, EtimevarID, Estart, Ecount, &time);
+                MPI_OUT err_prb = nc_put_vara_double( ncid_prb, EtimevarID, start_prb, Ecount, &time);
                 for (unsigned k = 0; k < probes.size(); k++){
                     transfer_prb[0][k] = y0[0][probes[k]];
                     transfer_prb[1][k] = y0[0][probes[k]];
