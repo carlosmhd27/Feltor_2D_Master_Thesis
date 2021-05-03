@@ -22,35 +22,40 @@ class Analyse ():
     to run it one must introduce the name of the output File
     '''
 
-    def __init__ (self, File_name, Access_Mode = 'r', parallel = False):
+    def __init__ (self, File_name, Access_Mode = 'r', input_model = True, dimensions = True, fields = True, get_everything = True, integrate_fields = True, crop = 1, parallel = False):
         '''
         Open the data and extract some important parameters
         Also calculate the Center of Mass
         '''
         self.Data  = Dataset(File_name, Access_Mode, format="NETCDF4", parallel = parallel)
-        self.input = loads(self.Data.inputfile)
-        self.find_model()
+        if input_model or get_everything:
+            self.input = loads(self.Data.inputfile)
+            self.find_model()
 
-        self.Nx   = self.input['n_out'] * self.input['Nx_out']
-        self.Ny   = self.input['n_out'] * self.input['Ny_out']
-        self.time = copy(self.Data['time'][:])
-        self.nt   = len(self.time)
-        if self.nt < 2:
-            raise ValueError('The field contains only the initial conditions')
+        if dimensions or get_everything:
+            self.Nx   = self.input['n_out'] * self.input['Nx_out']
+            self.Ny   = self.input['n_out'] * self.input['Ny_out']
+            self.time = copy(self.Data['time'][:])
+            self.nt   = len(self.time)
+            if self.nt < 2:
+                raise ValueError('The field contains only the initial conditions')
 
-        self.x,  self.y  = copy(self.Data['x'][:]), copy(self.Data['y'][:])
-        self.lx, self.ly = self.input['lx'],        self.input['ly']
-        self.dt  = self.time[1] - self.time[0]
 
-        self.ions      = copy(self.Data['ions'][:])
-        sign = 1. if 'complete' in File_name.lower() else -1.
-        self.potential = sign *copy(self.Data['potential'][:])
-        self.v_r       = -gradient(self.potential, self.y, axis = 2)
-        self.vorticity = copy(self.Data['vorticity'][:])
+            self.x,  self.y  = copy(self.Data['x'][::crop]), copy(self.Data['y'][::crop])
+            self.lx, self.ly = self.input['lx'],        self.input['ly']
+            self.dt  = self.time[1] - self.time[0]
 
-        self.Mass      = self.integrate('ions') / (self.lx * self.ly)
-        self.Potential = self.integrate(self.potential) / (self.lx * self.ly)
-        #         self.CM(); self.V_CM()
+        if fields or get_everything:
+            nb, sign = (0, -1) if 'complete' not in File_name.lower() else (self.input['nb'], 1)
+            self.ions      = copy(self.Data['ions'][::crop]) + nb
+            self.potential = sign * copy(self.Data['potential'][:])
+            self.v_r       = -gradient(self.potential, self.y, axis = 2)
+            self.vorticity = copy(self.Data['vorticity'][::crop])
+
+        if (dimensions and integrate_fields) or get_everything:
+            sign = 1. if 'complete' in File_name.lower() else -1.
+            self.Mass      = self.integrate('ions', crop = crop) / (self.lx * self.ly)
+            self.Potential = self.integrate('potential', crop = crop) / (self.lx * self.ly)
 
     def find_model(self):
         '''
@@ -97,13 +102,8 @@ class Analyse ():
 
         self.V_CM_x = gradient(self.X_CM, self.time)
         self.V_CM_y = gradient(self.Y_CM, self.time)
-        # D_x, D_y = self.X_CM - roll(self.X_CM, 1), self.Y_CM - roll(self.Y_CM, 1)
-        # D_t      = self.time - roll(self.time, 1)
-        #
-        # self.V_CM_x,     self.V_CM_y    = D_x / D_t, D_y / D_t
-        # self.V_CM_x[0] = self.V_CM_y[0] = 0
 
-    def integrate(self, variable, dim_integral = 2, axis = -1, typ = 't', indep_vars = None):
+    def integrate(self, variable, dim_integral = 2, axis = -1, typ = 't', indep_vars = None, crop = 1):
         '''
         Function to integrate a variable over the grid, this variable could be
         a vector or a matrix, or over time (would be better to average over time)
@@ -114,7 +114,7 @@ class Analyse ():
         '''
 
         if type(variable) == str:
-            Integral = copy(self.Data[variable][:])
+            Integral = copy(self.Data[variable][::crop])
         else:
             Integral = copy(variable)
 
@@ -292,9 +292,7 @@ class Analyse ():
         l   = [self.lx, self.ly][axis]
         if Norm:
             Ampli = absolute(PFG)
-#             Amp = log(Amp[0] / Amp)
             Angle = angle(PFG)
-            # Ang = average(Ang, weights = Amp, axis = -1) / pi
             Amp = self.integrate(Ampli, 1, axis = -1) / l
             Ang = self.integrate(Angle * Ampli, 1, axis = -1) / (Amp * pi * l)
 
@@ -302,7 +300,6 @@ class Analyse ():
             PFG = self.integrate(PFG, 1, axis = -1) / l
 
             Amp = absolute(PFG)
-#             Amp = log(Amp[0] / Amp)
             Ang = angle(PFG)
 
         return Amp, Ang, f
