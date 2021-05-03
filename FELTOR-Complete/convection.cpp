@@ -47,11 +47,16 @@ int main( int argc, char* argv[])
     //create RHS
     convection::ExplicitPart<dg::CartesianGrid2d, dg::DMatrix, dg::DVec> exp( grid, p);
     //////////////////create initial vector///////////////////////////////////////
-    dg::Gaussian g( p.posX*p.lx, p.posY*p.ly, p.sigma, p.sigma, p.amp); //gaussian width is in absolute values
+    dg::Gaussian g ( p.posX *p.lx, p.posY * p.ly, p.sigma,  p.sigma,  p.amp ); //gaussian width is in absolute values
+    // dg::Gaussian g2( p.posX2*p.lx, p.posY2 * p.ly, p.sigma2, p.sigma2, p.amp2); //gaussian width is in absolute values
+    dg::TanhProfX tanh (p.x_b, p.tanh_width,  -1., 0.001 - p.nb, p.nb); // x_0, width, sign, B, A => B + A * 0.5(1 + sign tanh((x- x_0) / width))
     std::array<dg::DVec,2> y0{
-        dg::evaluate(g, grid),
+        dg::evaluate(tanh, grid),
         dg::evaluate(dg::zero,grid) // omega == 0
     };
+    { // dg::DVec ones(dg::evaluate(dg::one, grid));
+    dg::DVec g2(dg::evaluate(g, grid));
+    dg::blas1::axpby( 1., g2, 1., y0[0]);}
     //MW: our density variable is now y0 = n-nb
     //{dg::DVec ones(dg::evaluate(dg::one, grid));
     //dg::blas1::axpby( p.nb,  ones, 1., y0[0]);}

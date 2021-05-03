@@ -62,8 +62,8 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     m_x( dg::evaluate( dg::cooX2d, grid)), m_vol2d( dg::create::volume(grid)),
     m_phi( evaluate( dg::zero, grid)), m_temp(m_phi), m_phi_perturbation(m_phi),
     m_n_perturbation(m_phi), m_dn_dy(m_phi), m_full_n(m_phi), m_exp_phi(m_phi),
-    m_S_domain(dg::evaluate(dg::TanhProfX(p.x_a, p.tanh_width, -1., 0., 1.), grid)),
-    m_W_domain(dg::evaluate(dg::TanhProfX(p.x_c, p.tanh_width, +1., 0., 1.), grid)),
+    m_S_domain(dg::evaluate(dg::TanhProfX(p.x_a, p.border_width, -1., 0., 1.), grid)),
+    m_W_domain(dg::evaluate(dg::TanhProfX(p.x_c, p.border_width, +1., 0., 1.), grid)),
     m_vx(m_phi), m_vy(m_phi),
     // m_lapy({ m_phi, m_phi}),
     m_dy_n(   dg::create::dy(grid, p.bc_y_n)),
@@ -82,12 +82,12 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
         m_multi_pol[u].construct( m_multigrid.grid(u), dg::not_normed, dg::centered);
 
     if (p.model == "IC_HW"){                               /// sign, B, A
-      m_alpha = dg::evaluate(dg::TanhProfX(p.x_b, p.tanh_width,  1., 0., 1.), grid);
-      m_sigma = dg::evaluate(dg::TanhProfX(p.x_b, p.tanh_width, -1., 0., 1.), grid);
+      m_alpha = dg::evaluate(dg::TanhProfX(p.x_b, p.border_width,  1., 0., 1.), grid);
+      m_sigma = dg::evaluate(dg::TanhProfX(p.x_b, p.border_width, -1., 0., 1.), grid);
     }
     if (p.model == "HW_IC"){
-      m_alpha = dg::evaluate(dg::TanhProfX(p.x_b, p.tanh_width, -1., 0., 1.), grid);
-      m_sigma = dg::evaluate(dg::TanhProfX(p.x_b, p.tanh_width,  1., 0., 1.), grid);
+      m_alpha = dg::evaluate(dg::TanhProfX(p.x_b, p.border_width, -1., 0., 1.), grid);
+      m_sigma = dg::evaluate(dg::TanhProfX(p.x_b, p.border_width,  1., 0., 1.), grid);
     }
     if (p.model == "IC"){                               /// sign, B, A
       m_alpha = dg::evaluate(dg::zero, grid);

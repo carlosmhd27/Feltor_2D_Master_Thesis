@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include "dg/algorithm.h"
-// #include "json/json.h"
-#include <jsoncpp/json/json.h>
+#include "json/json.h"
+// #include <jsoncpp/json/json.h>
 
 namespace convection{
 
@@ -27,21 +27,22 @@ struct Parameters
 	double kappa, g, alpha, sgm, nu;
 	double tau, nb, lambda;
 
+	double tanh_width;
 	double amp,  sigma,  posX,  posY;
 	double amp2, sigma2, posX2, posY2;
 
 	double lx, ly;
-	double tanh_width, x_a, x_b, x_c;
+	double border_width, x_a, x_b, x_c;
 	dg::bc bc_x_n, bc_y_n;
 	dg::bc bc_x_omega, bc_y_omega;
 	dg::bc bc_x_phi, bc_y_phi;
 
 
 	Parameters( const Json::Value& js) {
-	model      = js["model"].asString();
-	modified   = js["modified"].asBool();
+	model     = js["model"].asString();
+	modified  = js["modified"].asBool();
 	save_pb   = js["save_probes"].asBool();
-    Time_Step  = js["Time_Step"].asString();
+    Time_Step = js["Time_Step"].asString();
 	n       = js["n"].asUInt();
 	Nx      = js["Nx"].asUInt();
 	Ny      = js["Ny"].asUInt();
@@ -72,21 +73,22 @@ struct Parameters
 	nb       = js["nb"].asDouble();
 	nu       = js["nu_perp"].asDouble();     // Dissipation
 
-	amp    = js["amplitude"].asDouble();
-	amp2   = js["amplitude2"].asDouble();
-	sigma  = js["sigma"].asDouble();
-	sigma2 = js["sigma2"].asDouble();
-	posX   = js["posX"].asDouble();
-	posX2  = js["posX2"].asDouble();
-	posY   = js["posY"].asDouble();
-	posY2  = js["posY2"].asDouble();
-
-	lx         = js["lx"].asDouble();
-	ly         = js["ly"].asDouble();
 	tanh_width = js["tanh_width"].asDouble();
-	x_a        = js["x_a"].asDouble() * lx;
-	x_b        = js["x_b"].asDouble() * lx;
-	x_c        = js["x_c"].asDouble() * lx;
+	amp        = js["amplitude"].asDouble();
+	sigma      = js["sigma"].asDouble();
+	posX       = js["posX"].asDouble();
+	posY       = js["posY"].asDouble();
+	// amp2       = js["amplitude2"].asDouble();
+	// sigma2     = js["sigma2"].asDouble();
+	// posX2      = js["posX2"].asDouble();
+	// posY2      = js["posY2"].asDouble();
+
+	lx           = js["lx"].asDouble();
+	ly           = js["ly"].asDouble();
+	border_width = js["border_width"].asDouble();
+	x_a          = js["x_a"].asDouble() * lx;
+	x_b          = js["x_b"].asDouble() * lx;
+	x_c          = js["x_c"].asDouble() * lx;
 
 	bc_x_n      = dg::str2bc(js["bc_x_n"].asString());
 	bc_y_n      = dg::str2bc(js["bc_y_n"].asString());
@@ -105,7 +107,7 @@ struct Parameters
 			<< "         x_a:          = " << x_a << "\n"
 			<< "         x_b:          = " << x_b << "\n"
 			<< "         x_c:          = " << x_c << "\n"
-			<< "width of the boundary: = " << tanh_width << "\n";
+			<< "width of the boundary: = " << border_width << "\n";
 
         os << "Physical parameters are: \n"
             <<"              Viscosity:              = "<<nu<<"\n"
@@ -122,17 +124,13 @@ struct Parameters
 			os << "Position measured at " << probe[0]
 			   << "and " << probe[1] << "\n";}}
 
+		os  << "Width of the initial profile: " << tanh_width << "\n";
+
         os  <<"Blob parameters are: \n"
             << "     width:     = "<<sigma<<"\n"
             << "   amplitude:   = "<<amp<<"\n"
-            << "     posX:      =  "<<posX<<"\n"
-            << "     posY:      =  "<<posY<<"\n";
-
-		os  <<"2nd blob parameters are: \n"
-			<< "     width:     = "<<sigma2<<"\n"
-			<< "   amplitude:   = "<<amp2<<"\n"
-			<< "     posX:      = "<<posX2<<"\n"
-			<< "     posY:      = "<<posY2<<"\n";
+            << "     posX:      = "<<posX<<"\n"
+            << "     posY:      = "<<posY<<"\n";
 
         os << "Boundary parameters are: \n"
             <<"    lx = "<<lx<<"\n"
