@@ -28,7 +28,7 @@
 	"nu_perp": 2e-5,
 	"border_width": 0.01,
 	"tanh_width": 20,
-	"ProfAmp": 0.,
+	"ProfAmp": 0.0,
 	"amplitude": 0.01,
 	"sigma": 5,
 	"posX": 0.5,
