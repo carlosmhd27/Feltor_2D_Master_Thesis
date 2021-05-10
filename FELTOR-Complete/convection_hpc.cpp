@@ -124,14 +124,13 @@ int main( int argc, char* argv[])
     };
     {DVec g2(dg::evaluate(g, grid));
     dg::blas1::axpby( 1., g2, 1., y0[0]);}
-    //////////////////initialisation of timekarniadakis and first step///////////////////
-    double time = 0;
-    // if(p.Time_Step == "Multistep"){
-    dg::ExplicitMultistep< std::array<dg::DVec,2> > stepper( "TVB-3-3", y0);
-    stepper.init( exp, time, y0, p.dt);
-// }
-//     else{
-//         dg::Adaptive<dg::ERKStep<std::array<dg::DVec, 2>>> stepper( "Bogacki-Shampine-4-2-3", y0);}
+    //////////////////initialisation of the time stepper and first step///////////////////
+    double time = 0, dt = p.dt;
+    dg::ExplicitMultistep< std::array<dg::DVec,2> > multi_stepper( "TVB-3-3", y0);
+    dg::Adaptive<dg::ERKStep<std::array<dg::DVec, 2>>> adap_stepper( "Bogacki-Shampine-4-2-3", y0);
+    if(p.Time_Step == "Multistep"){
+        multi_stepper.init( exp, time, y0, p.dt);
+    }
 
     /////////////////////////////set up netcdf/////////////////////////////////////
     dg::file::NC_Error_Handle err, err_prb;
@@ -247,12 +246,13 @@ int main( int argc, char* argv[])
 
         for( unsigned j=0; j<p.itstp; j++)
         {
-            // if(p.Time_Step == "Multistep"){
-        stepper.step( exp, time, y0);
-        // }
-        //     else{
-        //         stepper.step( exp, time, y0, time, y0, dt, dg::pid_control, dg::l2norm, p.eps_time, p.eps_time);
-        //     }
+            if(p.Time_Step == "Multistep"){
+                multi_stepper.step( exp, time, y0);
+            }
+            // if(p.Time_Step == "Adaptive")
+            else{
+                adap_stepper.step( exp, time, y0, time, y0, dt, dg::pid_control, dg::l2norm, p.eps_time, p.eps_time);
+            }
             //store accuracy details
             {
                 MPI_OUT std::cout << "(m_tot-m_0)/m_0: "<< (exp.mass()-mass0)/mass_blob0<<"\t";
