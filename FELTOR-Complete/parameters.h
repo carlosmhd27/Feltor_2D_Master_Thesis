@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include "dg/algorithm.h"
-#include "json/json.h"
-// #include <jsoncpp/json/json.h>
+// #include "json/json.h"
+#include <jsoncpp/json/json.h>
 
 namespace convection{
 
@@ -27,7 +27,7 @@ struct Parameters
 	double kappa, g, alpha, sgm, nu;
 	double tau, nb, lambda;
 
-	double tanh_width;
+	double tanh_width, profamp;
 	double amp,  sigma,  posX,  posY;
 	double amp2, sigma2, posX2, posY2;
 
@@ -74,14 +74,11 @@ struct Parameters
 	nu       = js["nu_perp"].asDouble();     // Dissipation
 
 	tanh_width = js["tanh_width"].asDouble();
+	profamp    = js["ProfAmp"].asDouble();
 	amp        = js["amplitude"].asDouble();
 	sigma      = js["sigma"].asDouble();
 	posX       = js["posX"].asDouble();
 	posY       = js["posY"].asDouble();
-	// amp2       = js["amplitude2"].asDouble();
-	// sigma2     = js["sigma2"].asDouble();
-	// posX2      = js["posX2"].asDouble();
-	// posY2      = js["posY2"].asDouble();
 
 	lx           = js["lx"].asDouble();
 	ly           = js["ly"].asDouble();
@@ -124,7 +121,8 @@ struct Parameters
 			os << "Position measured at " << probe[0]
 			   << "and " << probe[1] << "\n";}}
 
-		os  << "Width of the initial profile: " << tanh_width << "\n";
+		os  << "Width of the initial profile: " << tanh_width << "\n"
+			<< "        With amplitude:       " << profamp << "\n";
 
         os  <<"Blob parameters are: \n"
             << "     width:     = "<<sigma<<"\n"

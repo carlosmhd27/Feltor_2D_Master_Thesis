@@ -117,7 +117,7 @@ int main( int argc, char* argv[])
     convection::ExplicitPart< CartesianGrid2d, DMatrix, DVec > exp( grid, p);
     //////////////////create initial vector///////////////////////////////////////
     dg::Gaussian g ( p.posX *p.lx, p.posY * p.ly, p.sigma,  p.sigma,  p.amp ); //gaussian width is in absolute values
-    dg::TanhProfX tanh (p.x_b, p.tanh_width,  -1., 0.001 - p.nb, p.nb); // x_0, width, sign, B, A => B + A * 0.5(1 + sign tanh((x- x_0) / width))
+    dg::TanhProfX tanh (p.x_b, p.tanh_width,  -1., p.profamp * (0.001 - p.nb), p.profamp * (p.nb)); // x_0, width, sign, B, A => B + A * 0.5(1 + sign tanh((x- x_0) / width))
     std::array<DVec,2> y0{
         dg::evaluate(tanh, grid),
         dg::evaluate(dg::zero,grid) // omega == 0
@@ -269,6 +269,7 @@ int main( int argc, char* argv[])
                     transfer_prb[2][k] = exp.potential()[probes[k]];
                     transfer_prb[3][k] = y0[1][probes[k]];
                     transfer_prb[4][k] = exp.vradial()[probes[k]];}
+                    // transfer_prb[4][k] = exp.vtot()[probes[k]];}
                 for (unsigned k = 0; k < 5; k++){
                     MPI_OUT err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], start_prb, count_prb, transfer_prb[k].data());
                 }
