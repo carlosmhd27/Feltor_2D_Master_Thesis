@@ -147,11 +147,11 @@ def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colorm
     ax[1, 1].set_title(r'Ions density [$N$]', fontsize = ftsz_title)
     ax[1, 2].set_title(r'Vorticity [$\omega_{ci}$]', fontsize = ftsz_title)
 
-    im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.potential[pst], cmap = colormap, shading = 'gouraud');
+    im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.potential[pst].transpose((0, 2, 1)), cmap = colormap, shading = 'gouraud');
 
-    im2 = ax[1, 1].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[pst], cmap = colormap, shading = 'gouraud');
+    im2 = ax[1, 1].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[pst].transpose((0, 2, 1)), cmap = colormap, shading = 'gouraud');
 
-    im3 = ax[1, 2].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[pst], cmap = colormap, shading = 'gouraud');
+    im3 = ax[1, 2].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[pst].transpose((0, 2, 1)), cmap = colormap, shading = 'gouraud');
 
     if len(cbar) < 3:
         cbar.append(fig.colorbar(im1,ax=ax[1, 0]))
@@ -236,17 +236,17 @@ def animate_mesh_contour (position, Analytics, ax, fig):
     # Contour
     # Potential
     ax = init_mesh_contour(Analytics, ax, fig, suptitle = False)
-    ax[1].contour(Analytics.x, Analytics.y, Analytics.potential[position], cmap = 'hot')
+    ax[1].contour(Analytics.x, Analytics.y, Analytics.potential[position].transpose((0, 2, 1)), cmap = 'hot')
 
     ## Pcolormesh
     # Radial Velocity
-    im0 = ax[0].pcolormesh(Analytics.x, Analytics.y, Analytics.v_r[position], cmap = 'hot', shading = 'gouraud')
+    im0 = ax[0].pcolormesh(Analytics.x, Analytics.y, Analytics.v_r[position].transpose((0, 2, 1)), cmap = 'hot', shading = 'gouraud')
 
     ## Density
-    im1 = ax[1].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[position], cmap = 'hot', shading = 'gouraud')
+    im1 = ax[1].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[position].transpose((0, 2, 1)), cmap = 'hot', shading = 'gouraud')
 
     ## Vorticity
-    im2 = ax[2].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[position], cmap = 'hot', shading = 'gouraud')
+    im2 = ax[2].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[position].transpose((0, 2, 1)), cmap = 'hot', shading = 'gouraud')
     if len(cbar) < 2:
         cbar.append(fig.colorbar(im0, ax = ax[0]))
         cbar.append(fig.colorbar(im1, ax = ax[1]))
