@@ -107,7 +107,7 @@ if rank < len(models):
 
     ## Initiation of the figure
     fig, ax = subplots(2, 3, figsize=(32, 18),
-                       gridspec_kw={'height_ratios':[Analytics.ly / Analytics.lx, 1]})
+                       gridspec_kw={'height_ratios':[Analytics.lx / Analytics.ly, 1]})
 
     ## Generate the init function for the GIF, it needs the model the fig and the parameters
     init_    = lambda : init(model = model, Analytics = Analytics, ax = ax, fig = fig, extra = extra, colormap = clrmp)
