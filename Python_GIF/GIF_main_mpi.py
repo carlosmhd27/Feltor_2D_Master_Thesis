@@ -1,4 +1,4 @@
-from GIF_modules import Analyzed, animate, init
+from GIF_modules import Analyzed, animate, init, Flux_plot
 from datetime    import datetime
 from os.path     import join, exists, isdir
 from os          import remove, listdir
@@ -8,7 +8,7 @@ from numpy       import arange
 from warnings    import warn
 from mpi4py      import MPI
 
-from matplotlib.pyplot    import clf, show, subplots
+from matplotlib.pyplot    import clf, show, subplots, savefig
 from matplotlib.animation import writers, FuncAnimation
 from matplotlib           import use
 
@@ -16,11 +16,12 @@ from matplotlib           import use
 
 use("Agg")
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
-name = MPI.Get_processor_name()
-wrtr = 'pillow'
+comm  = MPI.COMM_WORLD
+rank  = comm.Get_rank()
+size  = comm.Get_size()
+name  = MPI.Get_processor_name()
+wrtr  = 'pillow'
+clrmp = 'seismic'
 ## General variables
 fps = 5
 i   = 5   ## to reduce the number of points we use
@@ -79,9 +80,6 @@ if rank < len(models):
     File_name = join(dir_name, f'output_{model}.nc')
     existance = exists(File_name)
 
-    ## Initiation of the figure
-    fig, ax = subplots(2, 3, figsize=(24, 15))
-
     if not existance:
         with open(info_file, 'a') as information:
             information.write(f'{File_name} does not exist.')
@@ -98,15 +96,27 @@ if rank < len(models):
         information.write(f'The file started at {datetime.now()}'+ '\n')
         information.write('+' * 50 + "\n")
 
+    ## Flux
+    fig, ax = subplots(2, figsize=(24, 15))
+    fig, ax = Flux_plot(Analytics, ax, fig, model = model)
+    Flux_name = join(dir_name, f'Flux_{model + extra}.jpeg')
+    savefig(Flux_name)
+    clf()
+    print('The Flux is saved after {:1.2f} seconds'.format(time() - start))
+
+
+    ## Initiation of the figure
+    fig, ax = subplots(2, 3, figsize=(24, 15))
+
     ## Generate the init function for the GIF, it needs the model the fig and the parameters
-    init_    = lambda : init(model = model, Analytics = Analytics, ax = ax, fig = fig, extra = extra)
+    init_    = lambda : init(model = model, Analytics = Analytics, ax = ax, fig = fig, extra = extra, colormap = clrmp)
     animate_ = lambda pos, An, a: animate(pos, An, a, fig = fig)
 
     ## We define the format for writing the mp4 file
     Writer = writers[wrtr]
     writer = Writer(fps=fps, metadata=dict(artist='Me')) #, bitrate = 600
 
-    ## We define the animation class and we save the animation, or show it 
+    ## We define the animation class and we save the animation, or show it
     ani = FuncAnimation(fig, animate_, arange(0, len(Analytics.ions), i),
                         fargs = (Analytics, ax),
                         init_func=init_, interval = 100) ## arange(1, len(Analytics.ions))
@@ -125,6 +135,3 @@ if rank < len(models):
     with open(info_file, 'a') as information:
         information.write('After {} h and {:.1f} min, I am done with model: {}'.format(nd_hr, nd_mn, model + extra) + 2 * "\n")
     print('After {} h and {:.1f} min, I am done with model: {}'.format(nd_hr, nd_mn, model + extra) + 2 * "\n")
-
-    #except:
-    #   print('Something went wrong')
