@@ -41,21 +41,21 @@ class Analyse ():
                 raise ValueError('The field contains only the initial conditions')
 
 
-            self.x,  self.y  = copy(self.Data['x'][::crop]), copy(self.Data['y'][::crop])
+            self.x,  self.y  = copy(self.Data['x'][:]), copy(self.Data['y'][:])
             self.lx, self.ly = self.input['lx'],        self.input['ly']
             self.dt  = self.time[1] - self.time[0]
 
         if fields or get_everything:
             nb, sign = (0, -1) if 'complete' not in File_name.lower() else (self.input['nb'], 1)
-            self.ions      = copy(self.Data['ions'][::crop]) + nb
-            self.potential = sign * copy(self.Data['potential'][:])
+            self.ions      = copy(self.Data['ions'][::crop]).transpose((0, 2, 1)) + nb
+            self.potential = sign * copy(self.Data['potential'][:]).transpose((0, 2, 1))
             self.v_r       = -gradient(self.potential, self.y, axis = 2)
-            self.vorticity = copy(self.Data['vorticity'][::crop])
+            self.vorticity = copy(self.Data['vorticity'][::crop]).transpose((0, 2, 1))
 
         if (dimensions and integrate_fields) or get_everything:
             sign = 1. if 'complete' in File_name.lower() else -1.
-            self.Mass      = self.integrate('ions', crop = crop) / (self.lx * self.ly)
-            self.Potential = self.integrate('potential', crop = crop) / (self.lx * self.ly)
+            self.Mass      = self.integrate(self.ions, crop = crop) / (self.lx * self.ly)
+            self.Potential = self.integrate(self.potential, crop = crop) / (self.lx * self.ly)
 
     def find_model(self):
         '''
@@ -116,7 +116,7 @@ class Analyse ():
         if type(variable) == str:
             Integral = copy(self.Data[variable][::crop])
         else:
-            Integral = copy(variable)
+            Integral = copy(variable[::crop])
 
         dim_var = ndim(Integral)
 
@@ -149,7 +149,7 @@ class Analyse ():
         if type(variable) == str:
             parameter = copy(self.Data[variable][time_step])
         else:
-            parameter = copy(variable)
+            parameter = copy(variable).transpose((0, 2, 1))
 
         pcolormesh(self.x, self.y, parameter, **kwargs)
         if set_color_bar:
