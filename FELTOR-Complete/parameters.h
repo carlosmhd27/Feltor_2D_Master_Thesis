@@ -14,6 +14,7 @@ struct Parameters
 	std::string model;
 	bool modified;
     std::string Time_Step;
+	double tm_chng;
 	unsigned n, Nx, Ny;
 	double dt;
 	unsigned n_out, Nx_out, Ny_out;
@@ -43,6 +44,11 @@ struct Parameters
 	modified  = js["modified"].asBool();
 	save_pb   = js["save_probes"].asBool();
     Time_Step = js["Time_Step"].asString();
+	tm_chng   = js["Time_change"].asDouble();
+	if(Time_Step == "Mixed" and tm_chng == 0) {
+		tm_chng = std::numeric_limits<double>::infinity();
+	}
+
 	n       = js["n"].asUInt();
 	Nx      = js["Nx"].asUInt();
 	Ny      = js["Ny"].asUInt();
@@ -96,9 +102,10 @@ struct Parameters
 	}
 
     void display( std::ostream& os = std::cout ) const
-    {   os << "The model we are using is " <<model<<"\n"
+    {   os << " The model we are using is  " <<model<<"\n"
 			<< "Use the modified HW model: " << modified<<"\n"
-            << "    With time stepper:    "<< Time_Step <<"\n";
+			<< "     With time stepper:    " << Time_Step <<"\n"
+			<< "  Change in time stepper:  " << tm_chng <<"\n";
 
 		os << "Position of the boundaries between models \n"
 			<< "         x_a:          = " << x_a << "\n"

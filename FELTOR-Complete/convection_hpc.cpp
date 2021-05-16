@@ -128,7 +128,7 @@ int main( int argc, char* argv[])
     double time = 0, dt = p.dt;
     dg::ExplicitMultistep< std::array<dg::DVec,2> > multi_stepper( "TVB-3-3", y0);
     dg::Adaptive<dg::ERKStep<std::array<dg::DVec, 2>>> adap_stepper( "Bogacki-Shampine-4-2-3", y0);
-    if(p.Time_Step == "Multistep"){
+    if(p.Time_Step == "Multistep" or p.Time_Step == "Mixed"){
         multi_stepper.init( exp, time, y0, p.dt);
     }
 
@@ -217,11 +217,8 @@ int main( int argc, char* argv[])
         }
 
         for( unsigned i=0; i<5; i++){
-            std::cout << "Let's define the probes " << i << '\n';
             MPI_OUT err_prb = nc_def_var( ncid_prb, names_prb[i].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[i]);
-            std::cout << transfer_prb[i].size() << " " << probes.size() << '\n';
             MPI_OUT err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
-            std::cout << "Done!" << '\n';
         }
         MPI_OUT err_prb = nc_close(ncid_prb);
     }
@@ -246,7 +243,7 @@ int main( int argc, char* argv[])
 
         for( unsigned j=0; j<p.itstp; j++)
         {
-            if(p.Time_Step == "Multistep"){
+            if(p.Time_Step == "Multistep" or (p.Time_Step == "Mixed" and time > p.tm_chng)){
                 multi_stepper.step( exp, time, y0);
             }
             // if(p.Time_Step == "Adaptive")
@@ -256,6 +253,7 @@ int main( int argc, char* argv[])
             //store accuracy details
             {
                 MPI_OUT std::cout << "(m_tot-m_0)/m_0: "<< (exp.mass()-mass0)/mass_blob0<<"\t";
+                MPI_OUT std::cout << "\n\t Step "<<step <<" of "<<p.itstp*p.maxout << "\n";
             }
             #ifndef FELTOR_MPI
             if (p.save_pb){
