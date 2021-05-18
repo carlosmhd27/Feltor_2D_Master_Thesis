@@ -126,10 +126,12 @@ int main( int argc, char* argv[])
     dg::blas1::axpby( 1., g2, 1., y0[0]);}
     //////////////////initialisation of the time stepper and first step///////////////////
     double time = 0, dt = p.dt;
+    bool needs_to_init(true);
     dg::ExplicitMultistep< std::array<dg::DVec,2> > multi_stepper( "TVB-3-3", y0);
     dg::Adaptive<dg::ERKStep<std::array<dg::DVec, 2>>> adap_stepper( "Bogacki-Shampine-4-2-3", y0);
-    if(p.Time_Step == "Multistep" or p.Time_Step == "Mixed"){
+    if(p.Time_Step == "Multistep"){
         multi_stepper.init( exp, time, y0, p.dt);
+        needs_to_init = false;
     }
 
     /////////////////////////////set up netcdf/////////////////////////////////////
@@ -244,6 +246,10 @@ int main( int argc, char* argv[])
         for( unsigned j=0; j<p.itstp; j++)
         {
             if(p.Time_Step == "Multistep" or (p.Time_Step == "Mixed" and time > p.tm_chng)){
+                if(needs_to_init){
+                    needs_to_init = false,
+                    multi_stepper.init( exp, time, y0, p.dt);
+                }
                 multi_stepper.step( exp, time, y0);
                 dt = p.dt;
             }
