@@ -245,6 +245,7 @@ int main( int argc, char* argv[])
         {
             if(p.Time_Step == "Multistep" or (p.Time_Step == "Mixed" and time > p.tm_chng)){
                 multi_stepper.step( exp, time, y0);
+                dt = p.dt;
             }
             // if(p.Time_Step == "Adaptive")
             else{
@@ -253,7 +254,7 @@ int main( int argc, char* argv[])
             //store accuracy details
             {
                 MPI_OUT std::cout << "\t(m_tot-m_0)/m_0: "<< (exp.mass()-mass0)/mass_blob0<< " at time: " <<time <<"\n\t";
-                MPI_OUT std::cout << "\tAt time: "<<time << " With dt: "<< p.dt <<"\n\t";
+                MPI_OUT std::cout << "\tAt time: "<<time << " With dt: "<< dt <<"\n\t";
                 MPI_OUT std::cout << "\n\t Step "<<step <<" of "<<p.itstp*p.maxout << "\n";
             }
             #ifndef FELTOR_MPI
