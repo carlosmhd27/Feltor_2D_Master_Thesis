@@ -252,7 +252,8 @@ int main( int argc, char* argv[])
             }
             //store accuracy details
             {
-                MPI_OUT std::cout << "(m_tot-m_0)/m_0: "<< (exp.mass()-mass0)/mass_blob0<<"\t";
+                MPI_OUT std::cout << "\t(m_tot-m_0)/m_0: "<< (exp.mass()-mass0)/mass_blob0<< " at time: " <<time <<"\n\t";
+                MPI_OUT std::cout << "\tAt time: "<<time << " With dt: "<< p.dt <<"\n\t";
                 MPI_OUT std::cout << "\n\t Step "<<step <<" of "<<p.itstp*p.maxout << "\n";
             }
             #ifndef FELTOR_MPI
