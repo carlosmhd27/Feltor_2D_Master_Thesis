@@ -53,7 +53,6 @@ int main( int argc, char* argv[])
         dg::evaluate( g, grid), //n == Gaussian
         dg::evaluate(dg::zero,grid) // omega == 0
     };
-    //////////////////////////////////////////////////////////////////////
     dg::Karniadakis< std::array<dg::DVec,2> > stepper( y0, y0[0].size(), p.eps_time);
 
     dg::DVec dvisual( grid.size(), 0.);
@@ -73,7 +72,7 @@ int main( int argc, char* argv[])
     {
         //transform n to an equidistant grid
         dvisual = y0[0];
-        dg::blas1::transfer( dvisual, hvisual);
+        dg::assign( dvisual, hvisual);
         dg::blas2::gemv( equi, hvisual, visual);
         //compute the color scale
         colors.scale() =  (float)thrust::reduce( visual.begin(), visual.end(), 0., dg::AbsMax<double>() );
@@ -83,7 +82,7 @@ int main( int argc, char* argv[])
         render.renderQuad( visual, grid.n()*grid.Nx(), grid.n()*grid.Ny(), colors);
 
         //transform omega to an equidistant grid
-        dg::blas1::transfer( y0[1], hvisual);
+        dg::assign( y0[1], hvisual);
         dg::blas2::gemv( equi, hvisual, visual);
         //compute the color scale
         colors.scale() =  (float)thrust::reduce( visual.begin(), visual.end(), 0., dg::AbsMax<double>() );

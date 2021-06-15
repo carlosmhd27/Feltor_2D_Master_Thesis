@@ -51,7 +51,9 @@ struct ExplicitPart
     const container& potential( ) const {
         return m_phi;
     }
-
+    const container& vradial( ) const {
+        return m_vx;
+    }
     void operator()( double t, const std::array<container,2>& y, std::array<container,2>& yp);
 
     std::array<double,4> invariants( ) const {
@@ -78,11 +80,13 @@ struct ExplicitPart
     const container m_x, m_vol2d;
 
     container m_phi, m_temp, m_phi_perturbation, m_n_perturbation;
+    container m_vx, m_vy;
     std::array<container,2> m_lapy;
 
     //matrices and solvers
-    Matrix m_dy;
-    dg::ArakawaX< Geometry, Matrix, container> m_arakawa;
+    const Matrix m_dy, m_dx;
+    dg::Advection <Geometry, Matrix, container> m_advection;
+    // dg::ArakawaX< Geometry, Matrix, container> m_arakawa;
     dg::Elliptic<Geometry, Matrix, container> m_laplaceM; //contains negative laplacian
 
     dg::MultigridCG2d<Geometry, Matrix, container> m_multigrid;
@@ -100,10 +104,12 @@ ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const
     m_eps_pol(p.eps_pol), m_kappa(p.kappa), m_nu(p.nu), m_alpha(p.alpha), m_g(p.g),
     m_x( dg::evaluate( dg::cooX2d, grid)), m_vol2d( dg::create::volume(grid)),
     m_phi( evaluate( dg::zero, grid)), m_temp(m_phi), m_phi_perturbation(m_phi),
-    m_n_perturbation(m_phi),
+    m_n_perturbation(m_phi), m_vx(m_phi), m_vy(m_phi),
     m_lapy({ m_phi, m_phi}),
     m_dy( dg::create::dy(grid)),
-    m_arakawa( grid),
+    m_dx( dg::create::dx(grid)),
+    // m_arakawa( grid),
+    m_advection( grid, p.bc_x, p.bc_y),
     m_laplaceM( grid, dg::normed, dg::centered),
     m_multigrid( grid, p.stages),
     m_old_phi( 2, m_phi),
@@ -133,15 +139,23 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 	/// m_multigrid is a Conjugate Gradient in 2D for the multigrid
 	/// m_multi_pol seems to be the Laplacian for the multigrid
 	/// This is used to get the number of iterations needed to obtain
-	/// the desired accuracy, the operation used for this is   operation (phi) = omega * weights
+	/// the desired accuracy, the operation used for this is
+    //  operation (phi) = omega * weights
 	/// where weights must be in the grid
     std::vector<unsigned> number = m_multigrid.direct_solve( m_multi_pol, m_phi, y[1], {m_eps_pol, 10*m_eps_pol, 10*m_eps_pol});
-
-	/// insert phi for the next extrapolationi
-    m_old_phi.update( m_phi);
     if(  number[0] == m_multigrid.max_iter())
 		//// This gives an accuracy not reached fail
         throw dg::Fail( m_eps_pol);
+
+    /// insert phi for the next extrapolation
+    m_old_phi.update( m_phi);
+    //(phi is defined negative)
+    dg::blas1::scal(m_phi, -1.);
+
+    // v_x = -dy phi
+    dg::blas2::symv( -1., m_dy, m_phi, 0., m_vx);
+    // v_y =  dx phi
+    dg::blas2::symv( 1., m_dx, m_phi, 0., m_vy);
 
 	/////////////////////////update energetics/////////////////////
     for( unsigned i=0; i<2; i++)
@@ -180,33 +194,32 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     ///////////////////////Equations////////////////////////////////
 	if (m_model == "HW") {
 		///Average///
-	    if(m_modified){
+	    if(m_modified){ // ñ = <n>
             m_average( m_phi, m_phi_perturbation);
             m_average(  y[0], m_n_perturbation);
             dg::blas1::axpby( 1., m_phi, -1., m_phi_perturbation);
             dg::blas1::axpby( 1.,  y[0], -1., m_n_perturbation);
         }
         else
-        {
+        {   // ñ = n
             dg::blas1::copy( m_phi, m_phi_perturbation);
-            dg::blas1::copy( y[0], m_n_perturbation);
+            dg::blas1::copy( y[0],    m_n_perturbation);
         }
         ///Perturbation terms///
         for (unsigned i=0; i<2;i++) {
-            m_arakawa( m_phi, y[i], yp[i]);
+            // We compute the Poisson brackets
+            m_advection.upwind( -1., m_vx, m_vy, y[i], 0., yp[i]);
             dg::blas1::axpby ( -m_alpha,   m_n_perturbation, 1., yp[i]);
-            dg::blas1::axpby ( -m_alpha, m_phi_perturbation, 1., yp[i]);
+            dg::blas1::axpby (  m_alpha, m_phi_perturbation, 1., yp[i]);
     }}
 	else {
-    	for( unsigned i=0; i<2; i++)
-			///// [m_phi, y] = yp
-    	    m_arakawa( m_phi,y[i], yp[i]); //m_phi is negative!
+        for (unsigned i=0; i<2;i++) {
+            m_advection.upwind( -1., m_vx, m_vy, y[i], 0., yp[i]);}
 	}
 	/// Kappa * d / dy, the term of the y derivative,
 	/// phi is negative, that's why both have same sign
-	///              -m_kappa * M   *   x + a * y
-    dg::blas2::gemv(      m_g, m_dy, m_phi, 1., yp[0]);
-    dg::blas2::gemv( -m_kappa, m_dy,  y[0], 1., yp[1]);
+    dg::blas1::axpby( m_g   , m_vx,    1., yp[0]);
+    dg::blas2::symv( -m_kappa, m_dy,  y[0], 1., yp[1]);
     return;
 }
 

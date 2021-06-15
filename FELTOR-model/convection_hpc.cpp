@@ -33,18 +33,20 @@ int main( int argc, char* argv[])
     ////////////////////////////////set up computations///////////////////////////
     dg::Grid2d grid( 0, p.lx, 0, p.ly, p.n, p.Nx, p.Ny, p.bc_x, p.bc_y);
     dg::Grid2d grid_out( 0, p.lx, 0, p.ly, p.n_out, p.Nx_out, p.Ny_out, p.bc_x, p.bc_y);
+
+    /// Create probe vectors
     std::vector<unsigned> probes;
     std::vector<double>   probesx, probesy;
     if (p.save_pb){
-    dg::Grid1d gridx( grid.x0(), grid.x1(), grid.n(), grid.Nx());
-    dg::Grid1d gridy( grid.y0(), grid.y1(), grid.n(), grid.Ny());
-    dg::HVec x_axis(dg::create::abscissas(gridx)), y_axis(dg::create::abscissas(gridy));
-    for(unsigned i=0; i<p.probes.size(); i++){
-        probes.push_back(p.probes[i][1] * p.n * p.Ny * p.n + p.probes[i][0] * p.n);
-        probesx.push_back(x_axis[p.n * p.probes[i][0]]);
-        probesy.push_back(y_axis[p.n * p.probes[i][1]]);
-        std::cout << "Xpositions" << probesx[i] << '\n';
+        dg::Grid1d gridx( grid.x0(), grid.x1(), grid.n(), grid.Nx());
+        dg::Grid1d gridy( grid.y0(), grid.y1(), grid.n(), grid.Ny());
+        dg::HVec x_axis(dg::create::abscissas(gridx)), y_axis(dg::create::abscissas(gridy));
+        for(unsigned i=0; i<p.probes.size(); i++){
+            probes.push_back(p.probes[i][1] * p.Ny * p.n + p.probes[i][0]);
+            probesx.push_back(x_axis[p.probes[i][0]]);
+            probesy.push_back(y_axis[p.probes[i][1]]);
     }}
+
     //create RHS
 	//exp is the explicit part and imp the implicit. Both defined as
 	//classes form the convection.h file (obviously)
@@ -61,34 +63,26 @@ int main( int argc, char* argv[])
     dg::Karniadakis< std::array<dg::DVec,2> > karniadakis( y0, y0[0].size(), p.eps_time);
     karniadakis.init( exp, imp, time, y0, p.dt);
     /////////////////////////////set up netcdf/////////////////////////////////////
-    dg::file::NC_Error_Handle err;
-    int ncid;
+    dg::file::NC_Error_Handle err, err_prb;
+    int ncid, ncid_prb;
+    //Normal field
     err = nc_create( argv[2],NC_NETCDF4|NC_CLOBBER, &ncid);
+    //probs field
+    std::string nc_prb_fl = argv[2];
+    nc_prb_fl = nc_prb_fl.insert(nc_prb_fl.size() - 3, "_prbs" );
+    if(p.save_pb){
+        err_prb = nc_create( nc_prb_fl.c_str(),NC_NETCDF4|NC_CLOBBER, &ncid_prb);
+    }
     std::string input = js.toStyledString();
     err = nc_put_att_text( ncid, NC_GLOBAL, "inputfile", input.size(), input.data());
-
-    //Fields dimenstions
     int dim_ids[3], tvarID;
+
     err = dg::file::define_dimensions( ncid, dim_ids, &tvarID, grid_out);
 
     //Time ids
     int EtimeID, EtimevarID;
     err = dg::file::define_time( ncid, "energy_time", &EtimeID, &EtimevarID);
 
-    // Probe IDs
-    int probeID;
-    if (p.save_pb){
-        int probevarID, probevarxID, probevaryID;
-        size_t count_probs[] = {probes.size()};
-        size_t start_probs[] = {0};
-        err = nc_def_dim( ncid, "Probes",  probes.size(),  &probeID);
-        err = nc_def_var( ncid, "Probes",   NC_UINT,   1, &probeID, &probevarID);
-        err = nc_put_vara_uint( ncid, probevarID, start_probs, count_probs, probes.data());
-        err = nc_def_var( ncid, "Probes_x",  NC_DOUBLE, 1, &probeID, &probevarxID);
-        err = nc_put_vara_double( ncid, probevarxID, start_probs, count_probs, probesx.data());
-        err = nc_def_var( ncid, "Probes_y",  NC_DOUBLE, 1, &probeID, &probevaryID);
-        err = nc_put_vara_double( ncid, probevaryID, start_probs, count_probs, probesy.data());
-    }
     //energy IDs
     std::array<int,4> invariantID, dissID;
     std::array<std::string,4> invariant_names { { "mass", "entropy", "kinetic", "curvature"}};
@@ -99,6 +93,24 @@ int main( int argc, char* argv[])
         err = nc_def_var( ncid, dissipation_names[i].c_str(), NC_DOUBLE, 1, &EtimeID, &dissID[i]);
     }
     err = nc_enddef(ncid);
+
+    // Probe IDs
+    int probeID;
+    if (p.save_pb){
+        //Time ids
+        err_prb = dg::file::define_time( ncid_prb, "energy_time", &EtimeID, &EtimevarID);
+
+        int probevarID, probevarxID, probevaryID;
+        size_t count_probs[] = {probes.size()};
+        size_t start_probs[] = {0};
+        err_prb = nc_def_dim( ncid_prb, "Probes",  probes.size(),  &probeID);
+        err_prb = nc_def_var( ncid_prb, "Probes",   NC_UINT,   1, &probeID, &probevarID);
+        err_prb = nc_put_vara_uint( ncid_prb, probevarID, start_probs, count_probs, probes.data());
+        err_prb = nc_def_var( ncid_prb, "Probes_x",  NC_DOUBLE, 1, &probeID, &probevarxID);
+        err_prb = nc_put_vara_double( ncid_prb, probevarxID, start_probs, count_probs, probesx.data());
+        err_prb = nc_def_var( ncid_prb, "Probes_y",  NC_DOUBLE, 1, &probeID, &probevaryID);
+        err_prb = nc_put_vara_double( ncid_prb, probevaryID, start_probs, count_probs, probesy.data());
+    }
 
     size_t Ecount[] = {1};
     size_t Estart[] = {0};
@@ -112,6 +124,7 @@ int main( int argc, char* argv[])
     }
 
     dg::DVec transfer (dg::evaluate(dg::zero, grid));
+
     size_t count[3] = {1, grid_out.n()*grid_out.Ny(), grid_out.n()*grid_out.Nx()};
     size_t start[3] = {0, 0, 0}; // grid_out.n()*grid_out.Nx()
     int dataIDs[4];
@@ -119,6 +132,7 @@ int main( int argc, char* argv[])
     dg::IDMatrix interpolate = dg::create::interpolation( grid_out, grid);
     std::vector<dg::DVec> transferD(4, dg::evaluate(dg::zero, grid_out)); // grid_out
     dg::HVec transferH(dg::evaluate(dg::zero, grid_out)); // grid_out
+
     //field IDs
 
     for( unsigned i=0; i<4; i++){
@@ -136,32 +150,32 @@ int main( int argc, char* argv[])
     }
     err = nc_put_vara_double( ncid, tvarID, start, count, &time);
 
-
-    // std::vector<dg::DVec> transferD_1P(4, dg::evaluate( dg::zero, grid));
-    std::array<std::vector<double>, 4> transfer_prb;
+    const unsigned prb_nmb = 4;
+    std::array<std::vector<double>, prb_nmb> transfer_prb;
     int dim_prb_ids[2] = {EtimeID, probeID};
-    size_t count_prb[] = {1, probes.size()};
-    size_t start_prb[] = {0, 0};
-    int dataIDs_prb[4];
-    std::string names_prb[4] = {"electrons_probes", "ions_probes", "potential_probes", "vorticity_probes"};
+    size_t count_prb[2] = {1, probes.size()};
+    size_t start_prb[2] = {0, 0};
+    int dataIDs_prb[prb_nmb];
+    std::string names_prb[prb_nmb] = {"ions_probes", "potential_probes", "vorticity_probes", "vr_probes"};
 
     if (p.save_pb){
-        //Fields center point
+        //Time
+        err_prb = nc_put_vara_double( ncid_prb, EtimevarID, Estart, Ecount, &time);
 
         //////////////first output ////////////
         for (auto probe: probes){
             transfer_prb[0].push_back(y0[0][probe]);
-            transfer_prb[1].push_back(y0[0][probe]);
-            transfer_prb[2].push_back(exp.potential()[probe]);
-            transfer_prb[3].push_back(y0[1][probe]);
+            // transfer_prb[1].push_back(y0[0][probe]);
+            transfer_prb[1].push_back(exp.potential()[probe]);
+            transfer_prb[2].push_back(y0[1][probe]);
+            transfer_prb[3].push_back(exp.vradial()[probe]);
         }
 
-        for( unsigned i=0; i<4; i++){
-            err = nc_def_var( ncid, names_prb[i].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[i]);
-            err = nc_put_vara_double( ncid, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
+        for( unsigned i=0; i<prb_nmb; i++){
+            err_prb = nc_def_var( ncid_prb, names_prb[i].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[i]);
+            err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
         }
-
-        err = nc_close(ncid);
+        err_prb = nc_close(ncid_prb);
     }
 
     ///////////////////////////////////////Timeloop/////////////////////////////////
@@ -197,24 +211,13 @@ int main( int argc, char* argv[])
                 std::cout << "Accuracy: "<< 2.*(diff-diss)/(diff+diss)<<"\n";
             }
 
-            Estart[0]    += 1;
+            Estart[0] += 1;
             // start[0] +=1;
-            if (p.save_pb){start_prb[0] += 1;}
             {
+                std::cout << 0 <<std::endl;
                 err = nc_open(argv[2], NC_WRITE, &ncid);
-                err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
-                if (p.save_pb)
-                {
-                    for (unsigned i = 0; i < probes.size(); i++){
-                        transfer_prb[0][i] = y0[0][probes[i]];
-                        transfer_prb[1][i] = y0[0][probes[i]];
-                        transfer_prb[2][i] = exp.potential()[probes[i]];
-                        transfer_prb[3][i] = y0[1][probes[i]];}
-                    for (unsigned i = 0; i < 4; i++){
-                        err = nc_put_vara_double( ncid, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
-                    }
-                }
 
+                err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
                 for( int i=0; i<4; i++)
                 {
                     err = nc_put_vara_double( ncid, invariantID[i], Estart, Ecount, &exp.invariants()[i]);
@@ -222,6 +225,23 @@ int main( int argc, char* argv[])
                 }
 
                 err = nc_close(ncid);
+            }
+            if (p.save_pb){
+                start_prb[0] += 1;
+                {
+                err_prb = nc_open(nc_prb_fl.c_str(), NC_WRITE, &ncid_prb);
+                err_prb = nc_put_vara_double( ncid_prb, EtimevarID, start_prb, Ecount, &time);
+                for (unsigned k = 0; k < probes.size(); k++){
+                    transfer_prb[0][k] = y0[0][probes[k]];
+                    // transfer_prb[1][k] = y0[0][probes[k]];
+                    transfer_prb[1][k] = exp.potential()[probes[k]];
+                    transfer_prb[2][k] = y0[1][probes[k]];
+                    transfer_prb[3][k] = exp.vradial()[probes[k]];}
+                    // transfer_prb[4][k] = exp.vtot()[probes[k]];}
+                for (unsigned k = 0; k < prb_nmb; k++){
+                    err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], start_prb, count_prb, transfer_prb[k].data());
+                }
+                err_prb = nc_close(ncid_prb);}
             }
         }
         //////////////////////////write fields////////////////////////
