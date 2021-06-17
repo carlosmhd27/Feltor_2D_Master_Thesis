@@ -37,16 +37,17 @@ def Analyzed (File_name):
     global max_ions, max_potential, max_vorticity, max_v_r
     global amp_ions, max_potential, amp_vorticity, amp_int_vrad
 
-    Analytics = Analyse(File_name)
+    Analytics = Analyse(File_name, input_model = True, dimensions = True, fields = False, get_everything = False, integrate_fields = False)
 
-    Analytics.int_vort     = Analytics.integrate('vorticity') / (Analytics.lx * Analytics.ly)
-    Analytics.int_vort_sqr = Analytics.integrate(Analytics.vorticity ** 2) / (Analytics.lx * Analytics.ly)
+    Analytics.v_r          = -gradient(Analytics.['potential'], Analytics.y, axis = 1).transpose()
     Analytics.V_r          = Analytics.integrate(Analytics.v_r) / (Analytics.lx * Analytics.ly)
+    Analytics.Mass         = Analitics.integrate('ions') / (Analytics.lx * Analytics.ly)
+    Analytics.int_vort_sqr = Analytics.integrate(Analytics.['vorticity'] ** 2) / (Analytics.lx * Analytics.ly)
 
-    min_ions      = amin(Analytics.ions);      max_ions      = amax(Analytics.ions)
-    min_potential = amin(Analytics.potential); max_potential = amax(Analytics.potential)
-    min_vorticity = amin(Analytics.vorticity); max_vorticity = amax(Analytics.vorticity)
-    min_v_r       = amin(Analytics.v_r);       max_v_r       = amax(Analytics.v_r)
+    min_ions      = amin(Analytics.['ions']);      max_ions      = amax(Analytics.['ions'])
+    min_potential = amin(Analytics.['potential']); max_potential = amax(Analytics.['potential'])
+    min_vorticity = amin(Analytics.['vorticity']); max_vorticity = amax(Analytics.['vorticity'])
+    min_v_r       = amin(Analytics.v_r);           max_v_r       = amax(Analytics.v_r)
 
     amp_Mass      = max(absolute(min_ions), absolute(min_ions))
     amp_potential = max(absolute(min_potential), absolute(max_potential))
@@ -160,13 +161,13 @@ def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colorm
         if Analytics.input['x_c'] < 1:
             ax[1, i].vlines(Analytics.input['x_c'] * Analytics.lx, Analytics.y[0], Analytics.y[-1], color = 'black')
 
-    n_ions = log(Analytics.ions[pst]) if log_n else Analytics.ions[pst]
+    n_ions = log(Analytics.['ions'][pst]) if log_n else Analytics.['ions'][pst]
 
-    im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.potential[pst].transpose(), cmap = colormap, shading = 'gouraud');
+    im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.['potential'][pst], cmap = colormap, shading = 'gouraud');
 
-    im2 = ax[1, 1].pcolormesh(Analytics.x, Analytics.y, n_ions.transpose(), cmap = colormap_n, shading = 'gouraud');
+    im2 = ax[1, 1].pcolormesh(Analytics.x, Analytics.y, n_ions, cmap = colormap_n, shading = 'gouraud');
 
-    im3 = ax[1, 2].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[pst].transpose(), cmap = colormap, shading = 'gouraud');
+    im3 = ax[1, 2].pcolormesh(Analytics.x, Analytics.y, Analytics.['vorticity'][pst], cmap = colormap, shading = 'gouraud');
 
     if len(cbar) < 3:
         cbar.append(fig.colorbar(im1,ax=ax[1, 0]))
@@ -176,7 +177,7 @@ def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colorm
 
         min_n = log(min_ions) if log_n else min_ions
         max_n = log(max_ions) if log_n else max_ions
-        
+
         cbar[0].mappable.set_clim(vmin = -amp_potential,
                                   vmax =  amp_potential)
         cbar[1].mappable.set_clim(vmin =  min_n,

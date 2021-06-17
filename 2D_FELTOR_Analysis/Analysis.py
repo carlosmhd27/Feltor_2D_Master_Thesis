@@ -22,7 +22,7 @@ class Analyse ():
     to run it one must introduce the name of the output File
     '''
 
-    def __init__ (self, File_name, Access_Mode = 'r', input_model = True, dimensions = True, fields = True, get_everything = True, integrate_fields = True, crop = 1, parallel = False):
+    def __init__ (self, File_name, Access_Mode = 'r', input_model = False, dimensions = False, fields = False, get_everything = True, integrate_fields = False, crop = 1, parallel = False):
         '''
         Open the data and extract some important parameters
         Also calculate the Center of Mass
@@ -43,17 +43,16 @@ class Analyse ():
 
             self.x,  self.y  = copy(self.Data['x'][:]), copy(self.Data['y'][:])
             self.lx, self.ly = self.input['lx'],        self.input['ly']
-            self.dt  = self.time[1] - self.time[0]
+            self.dt  = (self.time[-1] - self.time[0]) / self.nt
 
         if fields or get_everything:
             nb, sign = (0, -1) if 'complete' not in File_name.lower() else (self.input['nb'], 1)
             self.ions      = copy(self.Data['ions'][::crop]).transpose((0, 2, 1)) + nb
-            self.potential = sign * copy(self.Data['potential'][:]).transpose((0, 2, 1))
+            self.potential = sign * copy(self.Data['potential'][::crop]).transpose((0, 2, 1))
             self.v_r       = -gradient(self.potential, self.y, axis = 2)
             self.vorticity = copy(self.Data['vorticity'][::crop]).transpose((0, 2, 1))
 
-        if (dimensions and integrate_fields) or get_everything:
-            sign = 1. if 'complete' in File_name.lower() else -1.
+        if (dimensions and fields and integrate_fields) or get_everything:
             self.Mass      = self.integrate(self.ions, crop = crop) / (self.lx * self.ly)
             self.Potential = self.integrate(self.potential, crop = crop) / (self.lx * self.ly)
 
@@ -114,7 +113,7 @@ class Analyse ():
         '''
 
         if type(variable) == str:
-            Integral = copy(self.Data[variable][::crop])
+            Integral = copy(self.Data[variable][::crop].transpose((0, 2, 1)))
         else:
             Integral = copy(variable[::crop])
 
