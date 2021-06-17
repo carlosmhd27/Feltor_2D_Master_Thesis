@@ -2,7 +2,7 @@ from sys import path
 path.insert(1, '/m100/home/userexternal/crodrigu/Plasma/Feltor_2D_Master_Thesis/2D_FELTOR_Analysis/')
 
 from Analysis          import Analyse
-from numpy             import amax, amin, absolute, log
+from numpy             import amax, amin, absolute, log, gradient
 from matplotlib        import use
 use("Agg")
 
@@ -39,14 +39,14 @@ def Analyzed (File_name):
 
     Analytics = Analyse(File_name, input_model = True, dimensions = True, fields = False, get_everything = False, integrate_fields = False)
 
-    Analytics.v_r          = -gradient(Analytics.['potential'], Analytics.y, axis = 1).transpose()
+    Analytics.v_r          = -gradient(Analytics.Data['potential'], Analytics.y, axis = 1).transpose()
     Analytics.V_r          = Analytics.integrate(Analytics.v_r) / (Analytics.lx * Analytics.ly)
     Analytics.Mass         = Analitics.integrate('ions') / (Analytics.lx * Analytics.ly)
-    Analytics.int_vort_sqr = Analytics.integrate(Analytics.['vorticity'] ** 2) / (Analytics.lx * Analytics.ly)
+    Analytics.int_vort_sqr = Analytics.integrate(Analytics.Data['vorticity'] ** 2) / (Analytics.lx * Analytics.ly)
 
-    min_ions      = amin(Analytics.['ions']);      max_ions      = amax(Analytics.['ions'])
-    min_potential = amin(Analytics.['potential']); max_potential = amax(Analytics.['potential'])
-    min_vorticity = amin(Analytics.['vorticity']); max_vorticity = amax(Analytics.['vorticity'])
+    min_ions      = amin(Analytics.Data['ions']);      max_ions      = amax(Analytics.Data['ions'])
+    min_potential = amin(Analytics.Data['potential']); max_potential = amax(Analytics.Data['potential'])
+    min_vorticity = amin(Analytics.Data['vorticity']); max_vorticity = amax(Analytics.Data['vorticity'])
     min_v_r       = amin(Analytics.v_r);           max_v_r       = amax(Analytics.v_r)
 
     amp_Mass      = max(absolute(min_ions), absolute(min_ions))
@@ -161,13 +161,13 @@ def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colorm
         if Analytics.input['x_c'] < 1:
             ax[1, i].vlines(Analytics.input['x_c'] * Analytics.lx, Analytics.y[0], Analytics.y[-1], color = 'black')
 
-    n_ions = log(Analytics.['ions'][pst]) if log_n else Analytics.['ions'][pst]
+    n_ions = log(Analytics.Data['ions'][pst]) if log_n else Analytics.Data['ions'][pst]
 
-    im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.['potential'][pst], cmap = colormap, shading = 'gouraud');
+    im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.Data['potential'][pst], cmap = colormap, shading = 'gouraud');
 
     im2 = ax[1, 1].pcolormesh(Analytics.x, Analytics.y, n_ions, cmap = colormap_n, shading = 'gouraud');
 
-    im3 = ax[1, 2].pcolormesh(Analytics.x, Analytics.y, Analytics.['vorticity'][pst], cmap = colormap, shading = 'gouraud');
+    im3 = ax[1, 2].pcolormesh(Analytics.x, Analytics.y, Analytics.Data['vorticity'][pst], cmap = colormap, shading = 'gouraud');
 
     if len(cbar) < 3:
         cbar.append(fig.colorbar(im1,ax=ax[1, 0]))
