@@ -96,9 +96,10 @@ int main( int argc, char* argv[])
 
     // Probe IDs
     int probeID;
+    int TprbID, TprbvarID;
     if (p.save_pb){
         //Time ids
-        err_prb = dg::file::define_time( ncid_prb, "energy_time", &EtimeID, &EtimevarID);
+        err_prb = dg::file::define_time( ncid_prb, "energy_time", &TprbID, &TprbvarID);
 
         int probevarID, probevarxID, probevaryID;
         size_t count_probs[] = {probes.size()};
@@ -152,7 +153,7 @@ int main( int argc, char* argv[])
 
     const unsigned prb_nmb = 4;
     std::array<std::vector<double>, prb_nmb> transfer_prb;
-    int dim_prb_ids[2] = {EtimeID, probeID};
+    int dim_prb_ids[2] = {TprbID, probeID};
     size_t count_prb[2] = {1, probes.size()};
     size_t start_prb[2] = {0, 0};
     int dataIDs_prb[prb_nmb];
@@ -160,7 +161,7 @@ int main( int argc, char* argv[])
 
     if (p.save_pb){
         //Time
-        err_prb = nc_put_vara_double( ncid_prb, EtimevarID, Estart, Ecount, &time);
+        err_prb = nc_put_vara_double( ncid_prb, TprbvarID, Estart, Ecount, &time);
 
         //////////////first output ////////////
         for (auto probe: probes){
@@ -212,34 +213,31 @@ int main( int argc, char* argv[])
             }
 
             Estart[0] += 1;
-            // start[0] +=1;
             {
                 std::cout << 0 <<std::endl;
                 err = nc_open(argv[2], NC_WRITE, &ncid);
 
                 err = nc_put_vara_double( ncid, EtimevarID, Estart, Ecount, &time);
-                for( int i=0; i<4; i++)
+                for( int k=0; k<4; k++)
                 {
-                    err = nc_put_vara_double( ncid, invariantID[i], Estart, Ecount, &exp.invariants()[i]);
-                    err = nc_put_vara_double( ncid, dissID[i], Estart, Ecount, &exp.invariants_diffusion()[i]);
+                    err = nc_put_vara_double( ncid, invariantID[k], Estart, Ecount, &exp.invariants()[k]);
+                    err = nc_put_vara_double( ncid, dissID[k], Estart, Ecount, &exp.invariants_diffusion()[k]);
                 }
 
                 err = nc_close(ncid);
             }
             if (p.save_pb){
-                start_prb[0] += 1;
                 {
                 err_prb = nc_open(nc_prb_fl.c_str(), NC_WRITE, &ncid_prb);
-                err_prb = nc_put_vara_double( ncid_prb, EtimevarID, start_prb, Ecount, &time);
+                err_prb = nc_put_vara_double( ncid_prb, TprbvarID, Estart, Ecount, &time);
                 for (unsigned k = 0; k < probes.size(); k++){
                     transfer_prb[0][k] = y0[0][probes[k]];
                     // transfer_prb[1][k] = y0[0][probes[k]];
                     transfer_prb[1][k] = exp.potential()[probes[k]];
                     transfer_prb[2][k] = y0[1][probes[k]];
                     transfer_prb[3][k] = exp.vradial()[probes[k]];}
-                    // transfer_prb[4][k] = exp.vtot()[probes[k]];}
                 for (unsigned k = 0; k < prb_nmb; k++){
-                    err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], start_prb, count_prb, transfer_prb[k].data());
+                    err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], Estart, count_prb, transfer_prb[k].data());
                 }
                 err_prb = nc_close(ncid_prb);}
             }

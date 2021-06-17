@@ -39,14 +39,14 @@ def Analyzed (File_name):
 
     Analytics = Analyse(File_name, input_model = True, dimensions = True, fields = False, get_everything = False, integrate_fields = False)
 
-    Analytics.v_r          = -gradient(Analytics.Data['potential'][:Analytics.nt], Analytics.y, axis = 1).transpose()
+    Analytics.v_r          = -gradient(Analytics.Data['potential'][:], Analytics.y, axis = 1).transpose()
     Analytics.V_r          = Analytics.integrate(Analytics.v_r) / (Analytics.lx * Analytics.ly)
-    Analytics.Mass         = Analitics.integrate('ions') / (Analytics.lx * Analytics.ly)
-    Analytics.int_vort_sqr = Analytics.integrate(Analytics.Data['vorticity'][:Analytics.nt] ** 2) / (Analytics.lx * Analytics.ly)
+    Analytics.Mass         = Analitics.integrate(Analytics.Data['ions'][:]) / (Analytics.lx * Analytics.ly)
+    Analytics.int_vort_sqr = Analytics.integrate(Analytics.Data['vorticity'][:] ** 2) / (Analytics.lx * Analytics.ly)
 
-    min_ions      = amin(Analytics.Data['ions'][:Analytics.nt]);      max_ions      = amax(Analytics.Data['ions'][:Analytics.nt])
-    min_potential = amin(Analytics.Data['potential'][:Analytics.nt]); max_potential = amax(Analytics.Data['potential'][:Analytics.nt])
-    min_vorticity = amin(Analytics.Data['vorticity'][:Analytics.nt]); max_vorticity = amax(Analytics.Data['vorticity'][:Analytics.nt])
+    min_ions      = amin(Analytics.Data['ions'][:]);      max_ions      = amax(Analytics.Data['ions'][:])
+    min_potential = amin(Analytics.Data['potential'][:]); max_potential = amax(Analytics.Data['potential'][:])
+    min_vorticity = amin(Analytics.Data['vorticity'][:]); max_vorticity = amax(Analytics.Data['vorticity'][:])
     min_v_r       = amin(Analytics.v_r);           max_v_r       = amax(Analytics.v_r)
 
     amp_Mass      = max(absolute(min_ions), absolute(min_ions))
