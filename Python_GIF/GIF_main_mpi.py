@@ -22,6 +22,7 @@ size  = comm.Get_size()
 name  = MPI.Get_processor_name()
 wrtr  = 'pillow'
 clrmp = 'seismic'
+log_n = True
 ## General variables
 fps = 5
 i   = 5   ## to reduce the number of points we use
@@ -40,18 +41,21 @@ if len(argv) > 1:
     else:
         extra += '_' + argv[2]
 
-all_models = ['IC', 'HW_mod', 'HW_ord', 'IC_HW_mod', 'IC_HW_ord',
-              'HW_mod_IC', 'HW_ord_IC']
+all_models = ['IC_HW_mod', 'IC_HW_ord', 'HW_mod_IC', 
+              'HW_ord_IC', 'HW_mod', 'HW_ord', 'IC']
 
 files = listdir(dir_name)
 models = []
+model  = ''
 for file in files:
-    if '.nc' in file:
-        model = file[7:-3]
-        if model in all_models:
-            models.append(model)
-        else:
-            warn(f'The model {model} seem not to much the defatul models')
+    if '.nc' in file and 'prbs' not in file:
+        for md in all_models:
+            if md in file:
+               model = md
+               models.append(model)
+               break
+        if model not in all_models:
+            warn(f'The model {model} seem not to match the default models')
 
 assert len(models) > 0, 'There are no outputs in this folder!'
 
@@ -71,7 +75,7 @@ if rank < len(models):
         # GIF_name = input('Please, give a new name')
     #       if GIF_name == '':
 #           raise Exception('We need a name for the GIF')
-
+    print('Looking for the info')
     info_file = join(dir_name, f"info_{model + extra}.txt")
     if exists(info_file):
         remove(info_file)
@@ -79,13 +83,14 @@ if rank < len(models):
     start     = time()
     File_name = join(dir_name, f'output_{model}.nc')
     existance = exists(File_name)
-
+    print('The time has started')
     if not existance:
         with open(info_file, 'a') as information:
             information.write(f'{File_name} does not exist.')
         raise Exception('The output file does not exit.')
 
     ## We analysis the file and obtain the values we wanna measure
+    print('Analysing the file')
     Analytics = Analyzed(File_name)
     print(f'The length of the output is {Analytics.nt}')
     with open(info_file, 'a') as information:
@@ -97,9 +102,10 @@ if rank < len(models):
         information.write('+' * 50 + "\n")
 
     ## Flux
+    print('I am going for the Flux')
     fig, ax = subplots(2, figsize=(24, 15))
     fig, ax = Flux_plot(Analytics, ax, fig, model = model)
-    Flux_name = join(dir_name, f'Flux_{model + extra}.jpeg')
+    Flux_name = join(dir_name, f'Flux_{model + extra}.jpeg') 
     savefig(Flux_name)
     clf()
     print('The Flux is saved after {:1.2f} seconds'.format(time() - start))
@@ -110,7 +116,7 @@ if rank < len(models):
                        gridspec_kw={'height_ratios':[Analytics.lx / Analytics.ly, 1]})
 
     ## Generate the init function for the GIF, it needs the model the fig and the parameters
-    init_    = lambda : init(model = model, Analytics = Analytics, ax = ax, fig = fig, extra = extra, colormap = clrmp)
+    init_    = lambda : init(model = model, Analytics = Analytics, ax = ax, fig = fig, extra = extra, colormap = clrmp, log_n = log_n)
     animate_ = lambda pos, An, a: animate(pos, An, a, fig = fig)
 
     ## We define the format for writing the mp4 file

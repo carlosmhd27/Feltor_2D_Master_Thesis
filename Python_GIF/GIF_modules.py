@@ -1,8 +1,8 @@
 from sys import path
-path.insert(1, '/marconi/home/userexternal/crodrigu/Plasma/prod/2D_FELTOR_Analysis/')
+path.insert(1, '/m100/home/userexternal/crodrigu/Plasma/Feltor_2D_Master_Thesis/2D_FELTOR_Analysis/')
 
 from Analysis          import Analyse
-from numpy             import amax, amin, absolute
+from numpy             import amax, amin, absolute, log
 from matplotlib        import use
 use("Agg")
 
@@ -15,6 +15,7 @@ cbar           = []
 min_time,         max_time         = 0, 0
 min_int_vort,     max_int_vort     = 0, 0
 min_int_vrad,     max_int_vrad     = 0, 0
+amp_int_vrad                       = 0
 min_Mass,         max_Mass         = 0, 0
 min_int_vort_sqr, max_int_vort_sqr = 0, 0
 min_ions,         max_ions         = 0, 0
@@ -34,7 +35,7 @@ def Analyzed (File_name):
 #    global max_time, max_int_vort, max_Mass, max_int_vort_sqr
     global min_ions, min_potential, min_vorticity, min_v_r
     global max_ions, max_potential, max_vorticity, max_v_r
-    global amp_ions, max_potential, amp_vorticity
+    global amp_ions, max_potential, amp_vorticity, amp_int_vrad
 
     Analytics = Analyse(File_name)
 
@@ -50,6 +51,7 @@ def Analyzed (File_name):
     amp_Mass      = max(absolute(min_ions), absolute(min_ions))
     amp_potential = max(absolute(min_potential), absolute(max_potential))
     amp_vorticity = max(absolute(min_vorticity), absolute(max_vorticity))
+    amp_int_vrad  = max(absolute(amax(Analytics.V_r)), absolute(amin(Analytics.V_r)))
 
 
     return Analytics
@@ -100,13 +102,15 @@ def animate (position, Analytics, ax, fig):
     return ax
 
 
-def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colormap = 'seismic'):
+def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colormap = 'seismic', colormap_n = 'hot', log_n = True):
                                                                                     #'hot'
     '''
     Initialization of the plots, set the limits in the graphics, labels, titles and scales
     '''
 
     global cbar
+    if min_ions < 0:
+        log_n = False
 
     if suptitle:
         fig.suptitle(models_name[model] + '\n' + r'lx = {} ly = {} $\nu$ = {} dt = {:1.4f}'.
@@ -120,7 +124,7 @@ def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colorm
     ax[0, 0].set_ylabel(r'Average $V_r$ [$\omega_{ci}\rho_s$]', fontsize = ftsz_label) #  $\omega$ [$\omega_{ci}$]
     ax[0, 0].plot(Analytics.time, Analytics.V_r, color='tab:blue');
 #    ax[0, 0].set_xlim(min_time - 0.5, max_time + 0.5)
-    ax[0, 0].set_ylim(- amp_int_v_r - 0.1 * amp_int_v_r, amp_int_v_r + 0.1 * amp_int_v_r)
+    ax[0, 0].set_ylim(- amp_int_vrad - 0.1 * amp_int_vrad, amp_int_vrad + 0.1 * amp_int_vrad)
 #    ax[0, 0].set_title('Average Vorticity', fontsize = ftsz_title)
     ax[0, 0].set_title('Average Radial transport', fontsize = ftsz_title) # Vorticity
 
@@ -143,25 +147,40 @@ def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colorm
 
     ## Pcolormesh
     ## Potential, density, Vorticity
+    n_title = r'Logarithm of the Density [$\log{N}$]' if log_n else r'Density [$N$]'
+
     ax[1, 0].set_title(r'Potential [$e / T_e$]', fontsize = ftsz_title)
-    ax[1, 1].set_title(r'Ions density [$N$]', fontsize = ftsz_title)
+    ax[1, 1].set_title(n_title, fontsize = ftsz_title)
     ax[1, 2].set_title(r'Vorticity [$\omega_{ci}$]', fontsize = ftsz_title)
 
-    im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.potential[pst].transpose((0, 2, 1)), cmap = colormap, shading = 'gouraud');
+    for i in range(len(ax[1])):
+        ax[1, i].vlines(Analytics.input['x_a'] * Analytics.lx, Analytics.y[0], Analytics.y[-1], color = 'black')
+        ax[1, i].vlines(Analytics.input['x_b'] * Analytics.lx, Analytics.y[0], Analytics.y[-1], color = 'black')
 
-    im2 = ax[1, 1].pcolormesh(Analytics.x, Analytics.y, Analytics.ions[pst].transpose((0, 2, 1)), cmap = colormap, shading = 'gouraud');
+        if Analytics.input['x_c'] < 1:
+            ax[1, i].vlines(Analytics.input['x_c'] * Analytics.lx, Analytics.y[0], Analytics.y[-1], color = 'black')
 
-    im3 = ax[1, 2].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[pst].transpose((0, 2, 1)), cmap = colormap, shading = 'gouraud');
+    n_ions = log(Analytics.ions[pst]) if log_n else Analytics.ions[pst]
+
+    im1 = ax[1, 0].pcolormesh(Analytics.x, Analytics.y, Analytics.potential[pst].transpose(), cmap = colormap, shading = 'gouraud');
+
+    im2 = ax[1, 1].pcolormesh(Analytics.x, Analytics.y, n_ions.transpose(), cmap = colormap_n, shading = 'gouraud');
+
+    im3 = ax[1, 2].pcolormesh(Analytics.x, Analytics.y, Analytics.vorticity[pst].transpose(), cmap = colormap, shading = 'gouraud');
 
     if len(cbar) < 3:
         cbar.append(fig.colorbar(im1,ax=ax[1, 0]))
         cbar.append(fig.colorbar(im2,ax=ax[1, 1]))
         cbar.append(fig.colorbar(im3,ax=ax[1, 2]))
     else:
+
+        min_n = log(min_ions) if log_n else min_ions
+        max_n = log(max_ions) if log_n else max_ions
+        
         cbar[0].mappable.set_clim(vmin = -amp_potential,
                                   vmax =  amp_potential)
-        cbar[1].mappable.set_clim(vmin =  min_ions,
-                                  vmax =  max_ions)
+        cbar[1].mappable.set_clim(vmin =  min_n,
+                                  vmax =  max_n)
         cbar[2].mappable.set_clim(vmin = -amp_vorticity,
                                   vmax =  amp_vorticity)
 
@@ -176,7 +195,7 @@ def Flux_plot(Analitics, ax, fig, model = None, extra = '',  suptitle = True):
     Plot the Average Flux, it should be kind of constant in the inner region between
     the source and the LCFS
     '''
-    hlf = Analitics.nt // 2
+    hlf   = Analitics.nt // 2
     Gamma = Analitics.integrate(Analitics.ions[hlf:] * Analitics.v_r[hlf:], dim_integral = 1, axis = -1, typ = 'y') / Analitics.ly
     n_yt  = Analitics.integrate(Analitics.ions[hlf:],                       dim_integral = 1, axis = -1, typ = 'y') / Analitics.ly
     Gamma = Analitics.integrate(Gamma, typ = 't', axis = 0, dim_integral = 1, indep_vars = [Analitics.time[hlf:]]) / (Analitics.time[-1] - Analitics.time[hlf])
@@ -192,12 +211,12 @@ def Flux_plot(Analitics, ax, fig, model = None, extra = '',  suptitle = True):
     ax[1].plot(Analitics.x, n_yt )
 
     ax[0].set_xlabel(r'y [$\rho_{s}$]', fontsize = ftsz_label)
-    ax[0].set_ylabel(r' \langle n v_r\rangle_y_t [$n\omega_{ci}\rho_s$]', fontsize = ftsz_label) #  $\omega$ [$\omega_{ci}$]
+    ax[0].set_ylabel(r'$\langle n v_r\rangle_{yt}$ [$n\omega_{ci}\rho_{s}$]', fontsize = ftsz_label) #  $\omega$ [$\omega_{ci}$]
     ax[0].set_title('Average Flux', fontsize = ftsz_title)
 
     ax[1].set_xlabel(r'y [$\rho_{s}$]', fontsize = ftsz_label)
-    ax[1].set_ylabel(r' \langle n \rangle_y_t [$n\omega_{ci}\rho_s$]', fontsize = ftsz_label) #  $\omega$ [$\omega_{ci}$]
-    ax[1].set_title('Average Flux', fontsize = ftsz_title)
+    ax[1].set_ylabel(r'$\langle n \rangle_{yt}$ [$n$]', fontsize = ftsz_label) #  $\omega$ [$\omega_{ci}$]
+    ax[1].set_title('Average Density', fontsize = ftsz_title)
     return fig, ax
 
 #=====================================================================================
