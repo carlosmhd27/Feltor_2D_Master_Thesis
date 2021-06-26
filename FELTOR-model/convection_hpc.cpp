@@ -158,20 +158,19 @@ int main( int argc, char* argv[])
     size_t start_prb[2] = {0, 0};
     int dataIDs_prb[prb_nmb];
     std::string names_prb[prb_nmb] = {"ions_probes", "potential_probes", "vorticity_probes", "vr_probes"};
-    dg::HVec phiH(dg::evaluate(dg::zero, grid_out)), vrH(dg::evaluate(dg::zero, grid_out));
+    std::vector<dg::HVec> trnsfr_prbH(4, dg::evaluate(dg::zero, grid)); 
     if (p.save_pb){
         //Time
         err_prb = nc_put_vara_double( ncid_prb, TprbvarID, Estart, Ecount, &time);
-        dg::assign(exp.potential(), phiH);
-        dg::assign(exp.vradial(), vrH);
+        dg::assign(y0[0],           trnsfr_prbH[0]);
+        dg::assign(exp.potential(), trnsfr_prbH[1]);
+        dg::assign(y0[1],           trnsfr_prbH[2]);
+        dg::assign(exp.vradial(),   trnsfr_prbH[3]);
         //////////////first output ////////////
-        for (auto probe: probes){
-            transfer_prb[0].push_back(y0[0][probe]);
-            transfer_prb[1].push_back(phiH[probe]);
-            transfer_prb[2].push_back(y0[1][probe]);
-            transfer_prb[3].push_back(vrH[probe]);
-            // transfer_prb[1].push_back(y0[0][probe]);
-        }
+        for (unsigned k = 0; k < trnsfr_prbH.size(); k++){
+            for (auto probe: probes){
+                transfer_prb[k].push_back(trnsfr_prbH[k][probe]);
+        }}
 
         for( unsigned i=0; i<prb_nmb; i++){
             err_prb = nc_def_var( ncid_prb, names_prb[i].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[i]);
@@ -230,15 +229,14 @@ int main( int argc, char* argv[])
                 {
                 err_prb = nc_open(nc_prb_fl.c_str(), NC_WRITE, &ncid_prb);
                 err_prb = nc_put_vara_double( ncid_prb, TprbvarID, Estart, Ecount, &time);
-                dg::assign(exp.potential(), phiH);
-                dg::assign(exp.vradial(), vrH);
-                for (unsigned k = 0; k < probes.size(); k++){
-                    transfer_prb[0][k] = y0[0][probes[k]];
-                    transfer_prb[1][k] = phiH[probes[k]];
-                    std::cout << exp.potential()[probes[k]] << '\n';
-                    transfer_prb[2][k] = y0[1][probes[k]];
-                    transfer_prb[3][k] = vrH[probes[k]];}
-                    // transfer_prb[1][k] = y0[0][probes[k]];
+                dg::assign(y0[0],           trnsfr_prbH[0]);
+                dg::assign(exp.potential(), trnsfr_prbH[1]);
+                dg::assign(y0[1],           trnsfr_prbH[2]);
+                dg::assign(exp.vradial(),   trnsfr_prbH[3]);
+                //////////////first output ////////////
+                for (unsigned k= 0; k < trnsfr_prbH.size(); k++){
+                    for (unsigned l = 0; l < probes.size(); l++){
+                        transfer_prb[k][l] = trnsfr_prbH[k][probes[l]];}}
                 for (unsigned k = 0; k < prb_nmb; k++){
                     err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], start_prb, count_prb, transfer_prb[k].data());
                 }
