@@ -158,7 +158,7 @@ int main( int argc, char* argv[])
     size_t start_prb[2] = {0, 0};
     int dataIDs_prb[prb_nmb];
     std::string names_prb[prb_nmb] = {"ions_probes", "potential_probes", "vorticity_probes", "vr_probes"};
-    std::vector<dg::HVec> trnsfr_prbH(4, dg::evaluate(dg::zero, grid)); 
+    std::vector<dg::HVec> trnsfr_prbH(4, dg::evaluate(dg::zero, grid)); // grid_out
     if (p.save_pb){
         //Time
         err_prb = nc_put_vara_double( ncid_prb, TprbvarID, Estart, Ecount, &time);
@@ -170,11 +170,9 @@ int main( int argc, char* argv[])
         for (unsigned k = 0; k < trnsfr_prbH.size(); k++){
             for (auto probe: probes){
                 transfer_prb[k].push_back(trnsfr_prbH[k][probe]);
-        }}
-
-        for( unsigned i=0; i<prb_nmb; i++){
-            err_prb = nc_def_var( ncid_prb, names_prb[i].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[i]);
-            err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
+            }
+            err_prb = nc_def_var( ncid_prb, names_prb[k].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[k]);
+            err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], start_prb, count_prb, transfer_prb[k].data());
         }
         err_prb = nc_close(ncid_prb);
     }
@@ -233,11 +231,10 @@ int main( int argc, char* argv[])
                 dg::assign(exp.potential(), trnsfr_prbH[1]);
                 dg::assign(y0[1],           trnsfr_prbH[2]);
                 dg::assign(exp.vradial(),   trnsfr_prbH[3]);
-                //////////////first output ////////////
-                for (unsigned k= 0; k < trnsfr_prbH.size(); k++){
+                for (unsigned k= 0; k < prb_nmb; k++){
                     for (unsigned l = 0; l < probes.size(); l++){
-                        transfer_prb[k][l] = trnsfr_prbH[k][probes[l]];}}
-                for (unsigned k = 0; k < prb_nmb; k++){
+                        transfer_prb[k][l] = trnsfr_prbH[k][probes[l]];
+                    }
                     err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], start_prb, count_prb, transfer_prb[k].data());
                 }
                 err_prb = nc_close(ncid_prb);}

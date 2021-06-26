@@ -196,31 +196,31 @@ int main( int argc, char* argv[])
 
 
     #ifndef FELTOR_MPI
-    std::array<std::vector<double>, 5> transfer_prb;
+    const unsigned prb_nmb = 4;
+    std::array<std::vector<double>, prb_nmb> transfer_prb;
     int dim_prb_ids[2] = {EtimeID, probeID};
     size_t count_prb[2] = {1, probes.size()};
     size_t start_prb[2] = {0, 0};
     size_t Ecount[] = {1};
     size_t Estart[] = {0};
-    int dataIDs_prb[5];
-    std::string names_prb[5] = {"electrons_probes", "ions_probes", "potential_probes", "vorticity_probes", "vr_probes"};
+    int dataIDs_prb[prb_nmb];
+    std::string names_prb[prb_nmb] = {"ions_probes", "potential_probes", "vorticity_probes", "vr_probes"};
+    std::vector<dg::HVec> trnsfr_prbH(4, dg::evaluate(dg::zero, grid)); // grid_out
 
     if (p.save_pb){
         //Time
         MPI_OUT err_prb = nc_put_vara_double( ncid_prb, EtimevarID, Estart, Ecount, &time);
-
+        dg::assign(y0[0],           trnsfr_prbH[0]);
+        dg::assign(exp.potential(), trnsfr_prbH[1]);
+        dg::assign(y0[1],           trnsfr_prbH[2]);
+        dg::assign(exp.vradial(),   trnsfr_prbH[3]);
         //////////////first output ////////////
-        for (auto probe: probes){
-            transfer_prb[0].push_back(y0[0][probe]);
-            transfer_prb[1].push_back(y0[0][probe]);
-            transfer_prb[2].push_back(exp.potential()[probe]);
-            transfer_prb[3].push_back(y0[1][probe]);
-            transfer_prb[4].push_back(exp.vradial()[probe]);
-        }
-
-        for( unsigned i=0; i<5; i++){
-            MPI_OUT err_prb = nc_def_var( ncid_prb, names_prb[i].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[i]);
-            MPI_OUT err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[i], start_prb, count_prb, transfer_prb[i].data());
+        for (unsigned k = 0; k < trnsfr_prbH.size(); k++){
+            for (auto probe: probes){
+                transfer_prb[k].push_back(trnsfr_prbH[k][probe]);
+            }
+            MPI_OUT err_prb = nc_def_var( ncid_prb, names_prb[k].data(),  NC_DOUBLE, 2,  dim_prb_ids, &dataIDs_prb[k]);
+            MPI_OUT err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], start_prb, count_prb, transfer_prb[k].data());
         }
         MPI_OUT err_prb = nc_close(ncid_prb);
     }
@@ -269,14 +269,14 @@ int main( int argc, char* argv[])
                 {
                 MPI_OUT err_prb = nc_open(nc_prb_fl.c_str(), NC_WRITE, &ncid_prb);
                 MPI_OUT err_prb = nc_put_vara_double( ncid_prb, EtimevarID, start_prb, Ecount, &time);
-                for (unsigned k = 0; k < probes.size(); k++){
-                    transfer_prb[0][k] = y0[0][probes[k]];
-                    transfer_prb[1][k] = y0[0][probes[k]];
-                    transfer_prb[2][k] = exp.potential()[probes[k]];
-                    transfer_prb[3][k] = y0[1][probes[k]];
-                    transfer_prb[4][k] = exp.vradial()[probes[k]];}
-                    // transfer_prb[4][k] = exp.vtot()[probes[k]];}
-                for (unsigned k = 0; k < 5; k++){
+                dg::assign(y0[0],           trnsfr_prbH[0]);
+                dg::assign(exp.potential(), trnsfr_prbH[1]);
+                dg::assign(y0[1],           trnsfr_prbH[2]);
+                dg::assign(exp.vradial(),   trnsfr_prbH[3]);
+                for (unsigned k= 0; k < prb_nmb; k++){
+                    for (unsigned l = 0; l < probes.size(); l++){
+                        transfer_prb[k][l] = trnsfr_prbH[k][probes[l]];
+                    }
                     MPI_OUT err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], start_prb, count_prb, transfer_prb[k].data());
                 }
                 MPI_OUT err_prb = nc_close(ncid_prb);}
