@@ -23,7 +23,8 @@ struct Parameters
 	unsigned stages;
 
 	double eps_pol, eps_time;
-	double kappa, nu, g, alpha;
+	double kappa, g, alpha;
+	std::array<double, 2> nu;
 
 	double amp, sigma, posX, posY;
 
@@ -59,7 +60,11 @@ struct Parameters
 	kappa       = js["curvature"].asDouble();
 	g           = js["dens_prof"].asDouble();
 	alpha       = js["adiabatic"].asDouble();
-	nu          = js["nu_perp"].asDouble();     // Dissipation
+
+	nu[0]       = js["nu_perp"].asDouble(); // Density dissipation
+	if (js["mu_perp"].asDouble()){nu[1]= js["mu_perp"].asDouble();}
+	else {nu[1]= js["nu_perp"].asDouble();} // Vorticity Dissipation
+
 	amp         = js["amplitude"].asDouble();
 	sigma       = js["sigma"].asDouble();
 	posX        = js["posX"].asDouble();
@@ -74,7 +79,8 @@ struct Parameters
     {   os << "The model we are using is " <<model<<"\n"
 		    << "Use the modified HW model: " << modified<<"\n";
         os << "Physical parameters are: \n"
-            <<"    Viscosity:       = "<<nu<<"\n"
+			<<" Density Viscosity:  = "<<nu[0]<<"\n"
+			<<"Vorticity Viscosity: = "<<nu[1]<<"\n"
             <<"    Curvature:       = "<<kappa<<"\n"
 			<<"  density profile:   = "<<g<<"\n"
 			<<" adiabatic parameter = "<<alpha<<"\n";

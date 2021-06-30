@@ -10,7 +10,7 @@ namespace convection
 template<class Geometry, class Matrix, class container>
 struct ImplicitPart
 {
-    ImplicitPart( const Geometry& g, double nu):
+    ImplicitPart( const Geometry& g, std::array<double, 2> nu):
         m_nu(nu),
         m_LaplacianM_perp( g, dg::normed, dg::centered),
         m_temp( evaluate( dg::zero, g))
@@ -23,8 +23,9 @@ struct ImplicitPart
         {
             dg::blas2::symv( m_LaplacianM_perp, y[i], m_temp);
             dg::blas2::symv( m_LaplacianM_perp, m_temp, yp[i]);
+            dg::blas1::scal( yp[i], -m_nu[i]);
         }
-        dg::blas1::scal( yp, -m_nu);
+
     }
 
     const container& weights() const {
@@ -38,7 +39,7 @@ struct ImplicitPart
     }
 
   private:
-    double m_nu;
+    std::array<double, 2> m_nu;
     dg::Elliptic<Geometry, Matrix, container> m_LaplacianM_perp;
     container m_temp;
 };
@@ -75,7 +76,8 @@ struct ExplicitPart
     const std::string  m_model;
     const bool m_modified;
     const double m_eps_pol;
-    const double m_kappa, m_nu, m_alpha;
+    const double m_kappa, m_alpha;
+    std::array<double, 2> m_nu;
     double m_g;
     const container m_x, m_vol2d;
 
@@ -101,7 +103,7 @@ struct ExplicitPart
 template< class Geometry, class M, class container>
 ExplicitPart< Geometry, M, container>::ExplicitPart( const Geometry& grid, const Parameters& p ):
     m_model(p.model), m_modified(p.modified),
-    m_eps_pol(p.eps_pol), m_kappa(p.kappa), m_nu(p.nu), m_alpha(p.alpha), m_g(p.g),
+    m_eps_pol(p.eps_pol), m_kappa(p.kappa), m_alpha(p.alpha), m_nu(p.nu), m_g(p.g),
     m_x( dg::evaluate( dg::cooX2d, grid)), m_vol2d( dg::create::volume(grid)),
     m_phi( evaluate( dg::zero, grid)), m_temp(m_phi), m_phi_perturbation(m_phi),
     m_n_perturbation(m_phi), m_vx(m_phi), m_vy(m_phi),
@@ -171,7 +173,7 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 	/// Total mass: Integrate n in the V    Vol       n
     m_invariant[0]      =  dg::blas1::dot( m_vol2d, y[0] );
 	/// Diffusion of the total mass
-    m_invariant_diss[0] = m_nu*dg::blas1::dot( m_vol2d, m_lapy[0]);
+    m_invariant_diss[0] = m_nu[0]*dg::blas1::dot( m_vol2d, m_lapy[0]);
 
 	//energy terms
 	/// Total entropy
@@ -187,10 +189,10 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
     m_invariant[3] = -m_kappa*dg::blas2::dot( m_x, m_vol2d, y[0]);
 
     //energy dissipation terms, the same over the Laplacian of y
-    m_invariant_diss[0] =  m_nu*dg::blas1::dot( m_vol2d, m_lapy[0]);
-    m_invariant_diss[1] =  m_nu*dg::blas2::dot( y[0],   m_vol2d, m_lapy[0]);
-    m_invariant_diss[2] = -m_nu*dg::blas2::dot( m_phi, m_vol2d, m_lapy[1]);
-    m_invariant_diss[3] = -m_nu*dg::blas2::dot( m_x,   m_vol2d, m_lapy[0]);
+    m_invariant_diss[0] =  m_nu[0]*dg::blas1::dot( m_vol2d, m_lapy[0]);
+    m_invariant_diss[1] =  m_nu[0]*dg::blas2::dot( y[0],   m_vol2d, m_lapy[0]);
+    m_invariant_diss[2] = -m_nu[0]*dg::blas2::dot( m_phi, m_vol2d, m_lapy[1]);
+    m_invariant_diss[3] = -m_nu[0]*dg::blas2::dot( m_x,   m_vol2d, m_lapy[0]);
     ///////////////////////Equations////////////////////////////////
 	if (m_model == "HW") {
 		///Average///
@@ -218,7 +220,7 @@ void ExplicitPart<G, M, container>::operator()( double t, const std::array<conta
 	}
 	/// Kappa * d / dy, the term of the y derivative,
 	/// phi is negative, that's why both have same sign
-    dg::blas1::axpby( m_g   , m_vx,    1., yp[0]);
+    dg::blas1::axpby( m_g    , m_vx,    1., yp[0]);
     dg::blas2::symv( -m_kappa, m_dy,  y[0], 1., yp[1]);
     return;
 }
