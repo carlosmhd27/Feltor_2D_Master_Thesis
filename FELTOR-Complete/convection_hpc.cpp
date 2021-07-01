@@ -106,7 +106,7 @@ int main( int argc, char* argv[])
         dg::Grid1d gridy( grid.y0(), grid.y1(), grid.n(), grid.Ny());
         dg::HVec x_axis(dg::create::abscissas(gridx)), y_axis(dg::create::abscissas(gridy));
         for(unsigned i=0; i<p.probes.size(); i++){
-            probes.push_back(p.probes[i][1] * p.Ny * p.n + p.probes[i][0]);
+            probes.push_back(p.probes[i][1] * p.Nx * p.n + p.probes[i][0]);
             probesx.push_back(x_axis[p.probes[i][0]]);
             probesy.push_back(y_axis[p.probes[i][1]]);
     }}

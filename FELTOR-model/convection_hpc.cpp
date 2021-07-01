@@ -42,7 +42,7 @@ int main( int argc, char* argv[])
         dg::Grid1d gridy( grid.y0(), grid.y1(), grid.n(), grid.Ny());
         dg::HVec x_axis(dg::create::abscissas(gridx)), y_axis(dg::create::abscissas(gridy));
         for(unsigned i=0; i<p.probes.size(); i++){
-            probes.push_back(p.probes[i][1] * p.Ny * p.n + p.probes[i][0]);
+            probes.push_back(p.probes[i][1] * p.Nx * p.n + p.probes[i][0]);
             probesx.push_back(x_axis[p.probes[i][0]]);
             probesy.push_back(y_axis[p.probes[i][1]]);
     }}
@@ -234,7 +234,6 @@ int main( int argc, char* argv[])
                 for (unsigned k= 0; k < prb_nmb; k++){
                     for (unsigned l = 0; l < probes.size(); l++){
                         transfer_prb[k][l] = trnsfr_prbH[k][probes[l]];
-                        if (k == 3){std::cout << transfer_prb[k][l] << '\n';}
                     }
                     err_prb = nc_put_vara_double( ncid_prb, dataIDs_prb[k], start_prb, count_prb, transfer_prb[k].data());
                 }
