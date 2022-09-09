@@ -28,7 +28,7 @@ amp_ions, amp_potential, amp_vorticity = 0, 0, 0
 def Analyzed (File_name):
     '''
     A function to get the parameters we want to plot, CM, error in Mass, Velocity of the
-    CM, Potential, density and vorticity-
+    CM, Potential, density and vorticity.
     '''
 
 #    global min_time, min_int_vort, min_Mass, min_int_vort_sqr
@@ -41,7 +41,7 @@ def Analyzed (File_name):
 
     Analytics.v_r          = -gradient(Analytics.Data['potential'][:], Analytics.y, axis = 1).transpose()
     Analytics.V_r          = Analytics.integrate(Analytics.v_r) / (Analytics.lx * Analytics.ly)
-    Analytics.Mass         = Analitics.integrate(Analytics.Data['ions'][:]) / (Analytics.lx * Analytics.ly)
+    Analytics.Mass         = Analytics.integrate(Analytics.Data['ions'][:]) / (Analytics.lx * Analytics.ly)
     Analytics.int_vort_sqr = Analytics.integrate(Analytics.Data['vorticity'][:] ** 2) / (Analytics.lx * Analytics.ly)
 
     min_ions      = amin(Analytics.Data['ions'][:]);      max_ions      = amax(Analytics.Data['ions'][:])
@@ -53,7 +53,6 @@ def Analyzed (File_name):
     amp_potential = max(absolute(min_potential), absolute(max_potential))
     amp_vorticity = max(absolute(min_vorticity), absolute(max_vorticity))
     amp_int_vrad  = max(absolute(amax(Analytics.V_r)), absolute(amin(Analytics.V_r)))
-
 
     return Analytics
 
@@ -97,9 +96,6 @@ def animate (position, Analytics, ax, fig):
     ax[0, 2].plot(time_pos, Analytics.int_vort_sqr[position], 'o', color='tab:red')
     ax[0, 2].annotate(round(time_pos, 1), (time_pos, Analytics.int_vort_sqr[position]), fontsize = ftsz_label)
 
-
-
-
     return ax
 
 
@@ -121,20 +117,20 @@ def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colorm
 
     ## Average Radial Velocity
     ax[0, 0].set_xlabel(r't [$\omega_{ci}^{-1}$]', fontsize = ftsz_label)
-#    ax[0, 0].set_ylabel(r'$\omega$ [$\omega_{ci}$]', fontsize = ftsz_label)
+#     ax[0, 0].set_ylabel(r'$\omega$ [$\omega_{ci}$]', fontsize = ftsz_label)
     ax[0, 0].set_ylabel(r'Average $V_r$ [$\omega_{ci}\rho_s$]', fontsize = ftsz_label) #  $\omega$ [$\omega_{ci}$]
     ax[0, 0].plot(Analytics.time, Analytics.V_r, color='tab:blue');
-#    ax[0, 0].set_xlim(min_time - 0.5, max_time + 0.5)
+#     ax[0, 0].set_xlim(min_time - 0.5, max_time + 0.5)
     ax[0, 0].set_ylim(- amp_int_vrad - 0.1 * amp_int_vrad, amp_int_vrad + 0.1 * amp_int_vrad)
-#    ax[0, 0].set_title('Average Vorticity', fontsize = ftsz_title)
+#     ax[0, 0].set_title('Average Vorticity', fontsize = ftsz_title)
     ax[0, 0].set_title('Average Radial transport', fontsize = ftsz_title) # Vorticity
 
     ## Total Mass
     ax[0, 1].set_xlabel(r't [$\omega_{ci}^{-1}]$', fontsize = ftsz_label)
     ax[0, 1].set_ylabel(r'n [$N$]', fontsize = ftsz_label)
     ax[0, 1].plot(Analytics.time, Analytics.Mass, color='tab:blue')
-#    ax[0, 1].set_xlim(min_time - 0.5, max_time + 0.5)
-    # ax[0, 1].set_ylim(- amp_Mass - 0.1 * amp_Mass, amp_Mass + 0.01)
+#     ax[0, 1].set_xlim(min_time - 0.5, max_time + 0.5)
+#     ax[0, 1].set_ylim(- amp_Mass - 0.1 * amp_Mass, amp_Mass + 0.01)
 #     ax[0, 1].set_xscale('symlog')
     ax[0, 1].set_title('Average density', fontsize = ftsz_title)
 
@@ -142,8 +138,8 @@ def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colorm
     ax[0, 2].set_xlabel(r't [$\omega_{ci}^{-1}$]', fontsize = ftsz_label)
     ax[0, 2].set_ylabel(r'$\omega^2$ [$\omega_{ci}^{2}$]', fontsize = ftsz_label)
     ax[0, 2].plot(Analytics.time, Analytics.int_vort_sqr, color='tab:blue')
-#    ax[0, 2].set_xlim(min_time - 0.5, max_time + 0.5)
-    # ax[0, 2].set_ylim(- amp_int_vort_sqr - 0.5, amp_int_vort_sqr + 0.5)
+#     ax[0, 2].set_xlim(min_time - 0.5, max_time + 0.5)
+#     ax[0, 2].set_ylim(- amp_int_vort_sqr - 0.5, amp_int_vort_sqr + 0.5)
     ax[0, 2].set_title('Average Vorticity Square', fontsize = ftsz_title)
 
     ## Pcolormesh
@@ -191,25 +187,25 @@ def init(Analytics, ax, fig, model, extra = '', pst = 0, suptitle = True, colorm
 # Plotting Fluxes
 #=====================================================================================
 
-def Flux_plot(Analitics, ax, fig, model = None, extra = '',  suptitle = True):
+def Flux_plot(Analytics, ax, fig, model = None, extra = '',  suptitle = True):
     '''
     Plot the Average Flux, it should be kind of constant in the inner region between
     the source and the LCFS
     '''
-    hlf   = Analitics.nt // 2
-    Gamma = Analitics.integrate(Analitics.ions[hlf:] * Analitics.v_r[hlf:], dim_integral = 1, axis = -1, typ = 'y') / Analitics.ly
-    n_yt  = Analitics.integrate(Analitics.ions[hlf:],                       dim_integral = 1, axis = -1, typ = 'y') / Analitics.ly
-    Gamma = Analitics.integrate(Gamma, typ = 't', axis = 0, dim_integral = 1, indep_vars = [Analitics.time[hlf:]]) / (Analitics.time[-1] - Analitics.time[hlf])
-    n_yt  = Analitics.integrate(n_yt,  typ = 't', axis = 0, dim_integral = 1, indep_vars = [Analitics.time[hlf:]]) / (Analitics.time[-1] - Analitics.time[hlf])
+    hlf   = Analytics.nt // 2
+    Gamma = Analytics.integrate(Analytics.ions[hlf:] * Analytics.v_r[hlf:], dim_integral = 1, axis = -1, typ = 'y') / Analytics.ly
+    n_yt  = Analytics.integrate(Analytics.ions[hlf:],                       dim_integral = 1, axis = -1, typ = 'y') / Analytics.ly
+    Gamma = Analytics.integrate(Gamma, typ = 't', axis = 0, dim_integral = 1, indep_vars = [Analytics.time[hlf:]]) / (Analytics.time[-1] - Analytics.time[hlf])
+    n_yt  = Analytics.integrate(n_yt,  typ = 't', axis = 0, dim_integral = 1, indep_vars = [Analytics.time[hlf:]]) / (Analytics.time[-1] - Analytics.time[hlf])
 
     if suptitle:
         fig.suptitle(models_name[model] + '\n' + r'lx = {} ly = {} $\nu$ = {} dt = {:1.3f}'.
-                     format(Analitics.lx, Analitics.ly,
-                     Analitics.input['nu_perp'], Analitics.dt),
+                     format(Analytics.lx, Analytics.ly,
+                     Analytics.input['nu_perp'], Analytics.dt),
                      fontsize = ftsz_title_big)
 
-    ax[0].plot(Analitics.x, Gamma)
-    ax[1].plot(Analitics.x, n_yt )
+    ax[0].plot(Analytics.x, Gamma)
+    ax[1].plot(Analytics.x, n_yt )
 
     ax[0].set_xlabel(r'y [$\rho_{s}$]', fontsize = ftsz_label)
     ax[0].set_ylabel(r'$\langle n v_r\rangle_{yt}$ [$n\omega_{ci}\rho_{s}$]', fontsize = ftsz_label) #  $\omega$ [$\omega_{ci}$]
@@ -218,6 +214,7 @@ def Flux_plot(Analitics, ax, fig, model = None, extra = '',  suptitle = True):
     ax[1].set_xlabel(r'y [$\rho_{s}$]', fontsize = ftsz_label)
     ax[1].set_ylabel(r'$\langle n \rangle_{yt}$ [$n$]', fontsize = ftsz_label) #  $\omega$ [$\omega_{ci}$]
     ax[1].set_title('Average Density', fontsize = ftsz_title)
+
     return fig, ax
 
 #=====================================================================================
