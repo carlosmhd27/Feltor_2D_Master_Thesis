@@ -4,7 +4,7 @@ from os.path     import join, exists, isdir
 from os          import remove
 from sys         import argv
 from time        import time
-from numpy       import arange, floor, remainder
+from numpy       import arange, floor, remainder, arange
 
 from matplotlib.pyplot    import clf, show, subplots
 from matplotlib.animation import writers, FuncAnimation, PillowWriter
@@ -80,7 +80,7 @@ for model in models:
     writer = Writer(fps=fps, metadata=dict(artist='Me'), bitrate = 600)
 
     ## We define the animation class and we save the animation, or show it
-    ani = FuncAnimation(fig, animate_, np.arange(0, len(Analytics.ions), i),
+    ani = FuncAnimation(fig, animate_, arange(0, len(Analytics.ions), i),
                                   fargs = (Analytics, ax),
                                   init_func=init_, interval = 100) ## np.arange(1, len(Analytics.ions))
 
